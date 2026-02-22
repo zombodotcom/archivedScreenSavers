@@ -58,7 +58,7 @@ const ERAS = {
     year: '1989-1993',
     desc: 'Berkeley Systems\' legendary collection',
     computer: 'mac-classic',
-    effects: ['toasters', 'starrynight', 'fish', 'zot', 'spotlight', 'worms', 'drain', 'warp', 'lissajous', 'rose', 'clocks', 'stringart', 'satori', 'gravity_ad']
+    effects: ['toasters', 'starrynight', 'fish', 'zot', 'spotlight', 'worms', 'drain', 'warp', 'lissajous', 'rose', 'clocks', 'stringart', 'satori', 'gravity_ad', 'johnnycastaway', 'daredevildan', 'baddog', 'neon', 'dosshell', 'lunaticfringe', 'mowinman', 'messages', 'frostfire', 'underwater']
   },
   kde: {
     name: 'KDE',
@@ -67,12 +67,27 @@ const ERAS = {
     computer: 'linux-workstation',
     effects: ['euphoria', 'fieldlines', 'fireflies', 'flux', 'helios', 'lattice', 'solarwinds', 'plasma']
   },
+  sgi: {
+    name: 'SGI IRIX',
+    year: '1991-2006',
+    desc: 'Silicon Graphics workstation classics',
+    computer: 'linux-workstation',
+    effects: ['electropaint', 'gears', 'insidecomputer']
+  },
+  winplus: {
+    name: 'Microsoft Plus!',
+    year: '1995-1998',
+    desc: 'Windows add-on pack screensavers',
+    computer: 'pc-beige',
+    brand: 'SVGA',
+    effects: ['underwater', 'insidecomputer']
+  },
   originals: {
     name: 'aSS Originals',
     year: '2024',
     desc: 'Modern WebGL creations',
     computer: 'modern-display',
-    effects: ['pipes', 'matrix', 'fireworks', 'warp', 'flow', 'rain', 'lava', 'aurora', 'neongrid', 'fractal', 'hyperspace', 'timetunnel', 'glplanet', 'plasma', 'euphoria', 'helios', 'fireflies']
+    effects: ['pipes', 'matrix', 'fireworks', 'warp', 'flow', 'rain', 'lava', 'aurora', 'neongrid', 'fractal', 'hyperspace', 'timetunnel', 'glplanet', 'plasma', 'euphoria', 'helios', 'fireflies', 'electropaint', 'frostfire']
   }
 };
 
