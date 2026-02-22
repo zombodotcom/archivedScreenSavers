@@ -51,21 +51,28 @@ const ERAS = {
     year: '1992-present',
     desc: 'Jamie Zawinski\'s 240+ module collection',
     computer: 'linux-workstation',
-    effects: ['matrix', 'gears', 'plasma', 'penrose', 'glplanet', 'sonar', 'hyperspace', 'flipflop', 'boingball', 'timetunnel']
+    effects: ['matrix', 'gears', 'plasma', 'penrose', 'glplanet', 'sonar', 'hyperspace', 'flipflop', 'boingball', 'timetunnel', 'unknownpleasures', 'molecule', 'sproingies', 'twang', 'lament', 'endgame']
   },
   afterdark: {
     name: 'After Dark',
     year: '1989-1993',
     desc: 'Berkeley Systems\' legendary collection',
     computer: 'mac-classic',
-    effects: ['toasters', 'starrynight', 'fish', 'zot', 'spotlight', 'worms', 'drain', 'warp']
+    effects: ['toasters', 'starrynight', 'fish', 'zot', 'spotlight', 'worms', 'drain', 'warp', 'lissajous', 'rose', 'clocks', 'stringart', 'satori', 'gravity_ad']
+  },
+  kde: {
+    name: 'KDE',
+    year: '1998-present',
+    desc: 'Linux desktop screensavers',
+    computer: 'linux-workstation',
+    effects: ['euphoria', 'fieldlines', 'fireflies', 'flux', 'helios', 'lattice', 'solarwinds', 'plasma']
   },
   originals: {
     name: 'aSS Originals',
     year: '2024',
     desc: 'Modern WebGL creations',
     computer: 'modern-display',
-    effects: ['pipes', 'matrix', 'fireworks', 'warp', 'flow', 'rain', 'lava', 'aurora', 'neongrid', 'fractal', 'hyperspace', 'timetunnel', 'glplanet', 'plasma']
+    effects: ['pipes', 'matrix', 'fireworks', 'warp', 'flow', 'rain', 'lava', 'aurora', 'neongrid', 'fractal', 'hyperspace', 'timetunnel', 'glplanet', 'plasma', 'euphoria', 'helios', 'fireflies']
   }
 };
 

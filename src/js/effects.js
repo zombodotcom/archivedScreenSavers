@@ -1861,4 +1861,1077 @@ void main() {
   fragColor = vec4(col, 1.0);
 }`, { name: 'Hello', desc: 'Animated greeting' });
 
+// ============================================================================
+// AFTER DARK - Additional Berkeley Systems classics
+// ============================================================================
+
+register('lissajous', `
+// After Dark Lissajous - elegant mathematical curves
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.0);
+
+  // Multiple Lissajous curves with different frequencies
+  for (float i = 0.0; i < 5.0; i++) {
+    float phase = i * 0.5 + u_time * 0.3;
+    float freqX = 2.0 + i;
+    float freqY = 3.0 + i * 0.7;
+
+    // Draw the curve as a trail
+    for (float t = 0.0; t < 100.0; t++) {
+      float tt = t / 100.0 * 6.28318;
+      vec2 pos = vec2(
+        sin(freqX * tt + phase) * 0.35,
+        sin(freqY * tt + phase * 1.3) * 0.35
+      );
+
+      float d = length(uv - pos);
+      vec3 curveCol = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + i * 1.5 + u_time);
+      col += curveCol * smoothstep(0.008, 0.0, d) * 0.15;
+    }
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Lissajous', desc: 'Mathematical curve patterns' });
+
+register('rose', `
+// After Dark Rose - mathematical rose curves
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.0);
+
+  float t = u_time * 0.2;
+
+  // Rose curve: r = cos(k * theta)
+  for (float curve = 0.0; curve < 3.0; curve++) {
+    float k = 3.0 + curve + sin(t + curve) * 0.5; // Varying petal count
+    float phase = curve * 2.0 + t;
+
+    for (float i = 0.0; i < 200.0; i++) {
+      float theta = i / 200.0 * 6.28318 * 2.0;
+      float r = cos(k * theta + phase) * 0.4;
+      vec2 pos = vec2(cos(theta), sin(theta)) * r;
+
+      float d = length(uv - pos);
+      vec3 roseCol = 0.5 + 0.5 * cos(vec3(0.0, 1.0, 2.0) + curve * 2.0 + theta);
+      col += roseCol * smoothstep(0.006, 0.0, d) * 0.08;
+    }
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Rose', desc: 'Mathematical rose curves' });
+
+register('clocks', `
+// After Dark Clocks - floating analog clocks
+float clockFace(vec2 p, float size, float time) {
+  float d = length(p) - size;
+  float face = smoothstep(0.01, 0.0, abs(d) - 0.005);
+
+  // Hour markers
+  for (float i = 0.0; i < 12.0; i++) {
+    float angle = i / 12.0 * 6.28318;
+    vec2 marker = vec2(cos(angle), sin(angle)) * size * 0.85;
+    face += smoothstep(0.01, 0.0, length(p - marker) - 0.01);
+  }
+
+  // Hour hand
+  float hourAngle = time / 12.0 * 6.28318 - 1.5708;
+  vec2 hourDir = vec2(cos(hourAngle), sin(hourAngle));
+  float hourHand = line(p, vec2(0.0), hourDir * size * 0.5);
+  face += smoothstep(0.008, 0.0, hourHand);
+
+  // Minute hand
+  float minAngle = fract(time) * 6.28318 - 1.5708;
+  vec2 minDir = vec2(cos(minAngle), sin(minAngle));
+  float minHand = line(p, vec2(0.0), minDir * size * 0.75);
+  face += smoothstep(0.005, 0.0, minHand);
+
+  // Second hand
+  float secAngle = fract(time * 60.0) * 6.28318 - 1.5708;
+  vec2 secDir = vec2(cos(secAngle), sin(secAngle));
+  float secHand = line(p, vec2(0.0), secDir * size * 0.8);
+  face += smoothstep(0.003, 0.0, secHand) * 0.8;
+
+  return face;
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.02, 0.02, 0.05);
+
+  float t = u_time * 0.1;
+
+  // Multiple floating clocks
+  for (float i = 0.0; i < 6.0; i++) {
+    float z = fract(hash(vec2(i, 0.0)) * 10.0 + t * 0.2);
+    vec2 pos = vec2(
+      sin(t * 0.5 + i * 2.0) * 0.5,
+      cos(t * 0.3 + i * 1.5) * 0.4
+    );
+
+    float size = 0.08 + z * 0.12;
+    vec2 clockPos = uv - pos;
+
+    float clock = clockFace(clockPos, size, u_time * 0.02 + i);
+    vec3 clockCol = 0.6 + 0.4 * cos(vec3(0.0, 2.0, 4.0) + i);
+    col += clockCol * clock * (0.5 + z * 0.5);
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Clocks', desc: 'Floating analog clocks' });
+
+register('stringart', `
+// After Dark String Art - thread art geometric patterns
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.0);
+
+  float t = u_time * 0.3;
+  int numLines = 40;
+
+  // Create string art pattern between two shapes
+  for (int i = 0; i < 40; i++) {
+    float fi = float(i) / 40.0;
+
+    // Points on a circle
+    float angle1 = fi * 6.28318 + t;
+    vec2 p1 = vec2(cos(angle1), sin(angle1)) * 0.4;
+
+    // Points on another circle (offset)
+    float angle2 = fi * 6.28318 * 2.0 - t * 0.7;
+    vec2 p2 = vec2(cos(angle2), sin(angle2)) * 0.25;
+
+    float d = line(uv, p1, p2);
+    vec3 lineCol = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + fi * 6.28 + t);
+    col += lineCol * smoothstep(0.003, 0.0, d) * 0.3;
+  }
+
+  // Second pattern
+  for (int i = 0; i < 30; i++) {
+    float fi = float(i) / 30.0;
+
+    // Square points
+    float side = floor(fi * 4.0);
+    float pos = fract(fi * 4.0);
+    vec2 p1;
+    if (side == 0.0) p1 = vec2(-0.35 + pos * 0.7, -0.35);
+    else if (side == 1.0) p1 = vec2(0.35, -0.35 + pos * 0.7);
+    else if (side == 2.0) p1 = vec2(0.35 - pos * 0.7, 0.35);
+    else p1 = vec2(-0.35, 0.35 - pos * 0.7);
+
+    // Connect to center with rotation
+    float angle = fi * 6.28318 + t * 0.5;
+    vec2 p2 = vec2(cos(angle), sin(angle)) * 0.1;
+
+    float d = line(uv, p1, p2);
+    vec3 lineCol = 0.5 + 0.5 * cos(vec3(1.0, 3.0, 5.0) + fi * 3.0 - t);
+    col += lineCol * smoothstep(0.002, 0.0, d) * 0.25;
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'String Art', desc: 'Thread art patterns' });
+
+register('satori', `
+// After Dark Satori - Zen abstract meditation pattern
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.0);
+
+  float t = u_time * 0.15;
+
+  // Concentric rings with slow breathing
+  float breath = sin(t) * 0.1 + 1.0;
+
+  for (float i = 0.0; i < 8.0; i++) {
+    float radius = (i + 1.0) * 0.05 * breath;
+    float ring = abs(length(uv) - radius);
+    float alpha = smoothstep(0.008, 0.0, ring);
+
+    // Subtle color shift
+    vec3 ringCol = vec3(0.3, 0.4, 0.5) + 0.2 * sin(i * 0.5 + t);
+    col += ringCol * alpha * 0.5;
+  }
+
+  // Rotating yin-yang inspired pattern
+  float angle = atan(uv.y, uv.x);
+  float r = length(uv);
+
+  float spiral = sin(angle * 2.0 + r * 10.0 - t * 2.0);
+  spiral = smoothstep(0.0, 0.1, spiral) * smoothstep(0.4, 0.1, r);
+
+  col += vec3(0.4, 0.5, 0.6) * spiral * 0.3;
+
+  // Central glow
+  float glow = exp(-r * 5.0);
+  col += vec3(0.5, 0.6, 0.7) * glow * 0.4;
+
+  // Outer fade
+  col *= smoothstep(0.6, 0.3, r);
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Satori', desc: 'Zen meditation pattern' });
+
+register('gravity_ad', `
+// After Dark Gravity - oscillating gravity simulation
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.02);
+
+  float t = u_time;
+
+  // Simulate particles affected by oscillating gravity
+  for (float i = 0.0; i < 30.0; i++) {
+    // Initial conditions from hash
+    vec2 startPos = vec2(hash(vec2(i, 0.0)) - 0.5, hash(vec2(i, 1.0)) - 0.5) * 0.8;
+    vec2 startVel = vec2(hash(vec2(i, 2.0)) - 0.5, hash(vec2(i, 3.0)) - 0.5) * 0.2;
+
+    // Oscillating gravity center
+    vec2 gravCenter = vec2(sin(t * 0.5) * 0.3, cos(t * 0.7) * 0.3);
+
+    // Simple gravity simulation (approximated)
+    float phase = hash(vec2(i, 4.0)) * 6.28;
+    vec2 pos = startPos;
+
+    // Orbital motion approximation
+    float orbitSpeed = 0.3 + hash(vec2(i, 5.0)) * 0.4;
+    float orbitRadius = length(startPos - gravCenter) * 0.8;
+    float angle = atan(startPos.y - gravCenter.y, startPos.x - gravCenter.x) + t * orbitSpeed;
+
+    pos = gravCenter + vec2(cos(angle), sin(angle)) * orbitRadius;
+
+    // Add some perturbation
+    pos += vec2(sin(t * 2.0 + i), cos(t * 1.5 + i)) * 0.02;
+
+    float d = length(uv - pos);
+    vec3 particleCol = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + i * 0.3);
+    col += particleCol * smoothstep(0.02, 0.0, d);
+
+    // Trail
+    for (float tr = 1.0; tr < 5.0; tr++) {
+      float trailAngle = angle - tr * 0.1 * orbitSpeed;
+      vec2 trailPos = gravCenter + vec2(cos(trailAngle), sin(trailAngle)) * orbitRadius;
+      float td = length(uv - trailPos);
+      col += particleCol * smoothstep(0.015, 0.0, td) * (1.0 - tr / 5.0) * 0.3;
+    }
+  }
+
+  // Draw gravity center
+  float centerD = length(uv - vec2(sin(t * 0.5) * 0.3, cos(t * 0.7) * 0.3));
+  col += vec3(1.0, 0.8, 0.5) * smoothstep(0.03, 0.0, centerD);
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Gravity', desc: 'Oscillating gravity simulation' });
+
+// ============================================================================
+// XSCREENSAVER - Additional jwz classics
+// ============================================================================
+
+register('unknownpleasures', `
+// XScreenSaver Unknown Pleasures - Joy Division pulsar visualization
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec3 col = vec3(0.0);
+
+  float t = u_time * 0.5;
+  int numLines = 40;
+
+  for (int i = 0; i < 40; i++) {
+    float fi = float(i) / 40.0;
+    float y = fi;
+    float lineY = 0.1 + fi * 0.8;
+
+    // Generate waveform for this line
+    float wave = 0.0;
+    float x = uv.x;
+
+    // Multiple frequency components
+    wave += sin(x * 20.0 + t + fi * 5.0) * 0.02;
+    wave += sin(x * 35.0 - t * 1.5 + fi * 3.0) * 0.015;
+    wave += sin(x * 50.0 + t * 0.7) * 0.01;
+
+    // Central peak (the iconic mountain shape)
+    float peak = exp(-pow((x - 0.5) * 4.0, 2.0)) * 0.15;
+    peak *= 1.0 + sin(t + fi * 2.0) * 0.3;
+    wave += peak;
+
+    // Additional peaks
+    wave += exp(-pow((x - 0.3) * 6.0, 2.0)) * 0.05 * sin(t * 1.2 + fi);
+    wave += exp(-pow((x - 0.7) * 6.0, 2.0)) * 0.05 * sin(t * 0.8 + fi * 1.5);
+
+    // Noise
+    wave += (hash(vec2(x * 100.0, fi + t)) - 0.5) * 0.01;
+
+    float actualY = lineY + wave;
+
+    // Draw line
+    float d = abs(uv.y - actualY);
+    float alpha = smoothstep(0.004, 0.0, d);
+
+    // Occlusion: don't draw if below a line in front
+    float occlusion = 1.0;
+    for (int j = i + 1; j < 40; j++) {
+      float fj = float(j) / 40.0;
+      float jLineY = 0.1 + fj * 0.8;
+      float jWave = exp(-pow((x - 0.5) * 4.0, 2.0)) * 0.15 * (1.0 + sin(t + fj * 2.0) * 0.3);
+      if (uv.y < jLineY + jWave + 0.01) {
+        occlusion *= 0.0;
+      }
+    }
+
+    col += vec3(1.0) * alpha * occlusion;
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Unknown Pleasures', desc: 'Joy Division pulsar waves' });
+
+register('molecule', `
+// XScreenSaver Molecule - 3D ball-and-stick molecular model
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.05, 0.05, 0.1);
+
+  float t = u_time * 0.5;
+
+  // Rotation matrices
+  float cosX = cos(t * 0.3), sinX = sin(t * 0.3);
+  float cosY = cos(t * 0.5), sinY = sin(t * 0.5);
+
+  // Define atoms (simple molecule - like water or methane)
+  vec3 atoms[5];
+  atoms[0] = vec3(0.0, 0.0, 0.0);  // Central atom
+  atoms[1] = vec3(0.2, 0.15, 0.0);
+  atoms[2] = vec3(-0.2, 0.15, 0.0);
+  atoms[3] = vec3(0.0, -0.1, 0.2);
+  atoms[4] = vec3(0.0, -0.1, -0.2);
+
+  // Atom colors
+  vec3 colors[5];
+  colors[0] = vec3(1.0, 0.2, 0.2);  // Red (oxygen-like)
+  colors[1] = vec3(0.8, 0.8, 0.8);  // White (hydrogen-like)
+  colors[2] = vec3(0.8, 0.8, 0.8);
+  colors[3] = vec3(0.8, 0.8, 0.8);
+  colors[4] = vec3(0.8, 0.8, 0.8);
+
+  float sizes[5];
+  sizes[0] = 0.08;
+  sizes[1] = 0.05;
+  sizes[2] = 0.05;
+  sizes[3] = 0.05;
+  sizes[4] = 0.05;
+
+  // Rotate all atoms
+  for (int i = 0; i < 5; i++) {
+    vec3 p = atoms[i];
+    // Rotate Y
+    float x1 = p.x * cosY - p.z * sinY;
+    float z1 = p.x * sinY + p.z * cosY;
+    // Rotate X
+    float y1 = p.y * cosX - z1 * sinX;
+    float z2 = p.y * sinX + z1 * cosX;
+    atoms[i] = vec3(x1, y1, z2);
+  }
+
+  // Draw bonds first (behind atoms)
+  for (int i = 1; i < 5; i++) {
+    vec3 p1 = atoms[0];
+    vec3 p2 = atoms[i];
+
+    // Project to 2D
+    vec2 proj1 = p1.xy / (1.0 + p1.z * 0.5);
+    vec2 proj2 = p2.xy / (1.0 + p2.z * 0.5);
+
+    float d = line(uv, proj1, proj2);
+    float bondAlpha = smoothstep(0.008, 0.002, d);
+    col += vec3(0.5) * bondAlpha * 0.5;
+  }
+
+  // Draw atoms (sorted by z would be better, but approximate)
+  for (int i = 0; i < 5; i++) {
+    vec3 p = atoms[i];
+    float z = p.z;
+    vec2 proj = p.xy / (1.0 + z * 0.5);
+    float size = sizes[i] / (1.0 + z * 0.5);
+
+    float d = length(uv - proj);
+    float atom = smoothstep(size, size - 0.01, d);
+
+    // Shading
+    vec2 lightDir = normalize(vec2(0.5, 0.5));
+    float shade = dot(normalize(uv - proj), lightDir) * 0.3 + 0.7;
+
+    col = mix(col, colors[i] * shade, atom);
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Molecule', desc: 'Ball-and-stick molecular model' });
+
+register('sproingies', `
+// XScreenSaver Sproingies - Q*bert style bouncing creatures
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.1, 0.05, 0.15);
+
+  float t = u_time;
+
+  // Draw isometric grid/stairs
+  for (float row = 0.0; row < 8.0; row++) {
+    for (float col_i = 0.0; col_i < 8.0 - row; col_i++) {
+      // Isometric position
+      vec2 isoPos = vec2(
+        (col_i - row * 0.5) * 0.12 - 0.2,
+        (row * 0.06 + col_i * 0.0) - 0.3 - row * 0.05
+      );
+
+      // Draw cube top (diamond shape)
+      vec2 p = uv - isoPos;
+      float diamond = abs(p.x) * 1.5 + abs(p.y) * 3.0;
+      float cube = smoothstep(0.08, 0.07, diamond);
+
+      vec3 cubeCol = vec3(0.3, 0.2, 0.4) + row * 0.05;
+      col += cubeCol * cube * 0.5;
+    }
+  }
+
+  // Bouncing sproingies
+  for (float i = 0.0; i < 5.0; i++) {
+    float phase = i * 1.3 + t * 2.0;
+    float bounce = abs(sin(phase)) * 0.15;
+
+    // Position on the grid
+    float gridX = mod(i * 1.7 + t * 0.3, 6.0);
+    float gridY = mod(i * 2.1 + t * 0.2, 5.0);
+
+    vec2 pos = vec2(
+      (gridX - gridY * 0.5) * 0.12 - 0.2,
+      (gridY * 0.06 + gridX * 0.0) - 0.3 - gridY * 0.05 + bounce
+    );
+
+    // Draw sproingie (simple ball with face)
+    float d = length(uv - pos);
+    float body = smoothstep(0.04, 0.03, d);
+
+    // Color
+    vec3 sproingie = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + i * 1.5);
+
+    // Eyes
+    vec2 eyeL = pos + vec2(-0.012, 0.01);
+    vec2 eyeR = pos + vec2(0.012, 0.01);
+    float eyes = smoothstep(0.008, 0.005, length(uv - eyeL));
+    eyes += smoothstep(0.008, 0.005, length(uv - eyeR));
+
+    col = mix(col, sproingie, body);
+    col = mix(col, vec3(0.0), eyes * body);
+
+    // Shadow
+    vec2 shadowPos = pos - vec2(0.0, bounce + 0.02);
+    float shadow = smoothstep(0.05, 0.02, length(uv - shadowPos));
+    col *= 1.0 - shadow * 0.3 * (1.0 - body);
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Sproingies', desc: 'Bouncing Q*bert creatures' });
+
+register('twang', `
+// XScreenSaver Twang - wobbly elastic grid distortion
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec3 col = vec3(0.0);
+
+  float t = u_time;
+
+  // Grid parameters
+  float gridSize = 20.0;
+  vec2 grid = uv * gridSize;
+  vec2 gridId = floor(grid);
+  vec2 gridUv = fract(grid);
+
+  // Distortion wave
+  vec2 distort = vec2(
+    sin(uv.y * 10.0 + t * 3.0) * sin(t + uv.x * 5.0),
+    cos(uv.x * 10.0 + t * 2.5) * sin(t * 1.2 + uv.y * 5.0)
+  ) * 0.1;
+
+  // Mouse/touch interaction simulation
+  vec2 touchPoint = vec2(0.5 + sin(t * 0.5) * 0.3, 0.5 + cos(t * 0.7) * 0.3);
+  float touchDist = length(uv - touchPoint);
+  vec2 touchDistort = normalize(uv - touchPoint + 0.001) * sin(touchDist * 20.0 - t * 5.0) * exp(-touchDist * 3.0) * 0.1;
+
+  distort += touchDistort;
+
+  // Draw distorted grid
+  vec2 distortedUv = uv + distort;
+  vec2 distGrid = distortedUv * gridSize;
+  vec2 distGridUv = fract(distGrid);
+
+  // Grid lines
+  float lineX = smoothstep(0.05, 0.0, abs(distGridUv.x - 0.5) - 0.45);
+  float lineY = smoothstep(0.05, 0.0, abs(distGridUv.y - 0.5) - 0.45);
+  float lines = max(lineX, lineY);
+
+  // Color based on distortion
+  vec3 lineCol = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + length(distort) * 10.0 + t);
+  col = lineCol * lines;
+
+  // Grid intersections glow
+  float intersection = lineX * lineY;
+  col += vec3(1.0, 0.8, 0.5) * intersection * 2.0;
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Twang', desc: 'Elastic grid distortion' });
+
+register('lament', `
+// XScreenSaver Lament - Hellraiser puzzle box
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.02, 0.01, 0.03);
+
+  float t = u_time * 0.3;
+
+  // Rotation
+  float cosT = cos(t), sinT = sin(t);
+  float cosT2 = cos(t * 0.7), sinT2 = sin(t * 0.7);
+
+  // Simple raymarched box with patterns
+  vec3 ro = vec3(0.0, 0.0, -1.5);
+  vec3 rd = normalize(vec3(uv, 1.0));
+
+  // Rotate ray direction
+  rd.xz = mat2(cosT, -sinT, sinT, cosT) * rd.xz;
+  rd.yz = mat2(cosT2, -sinT2, sinT2, cosT2) * rd.yz;
+
+  // Box intersection
+  vec3 boxSize = vec3(0.3);
+  vec3 m = 1.0 / rd;
+  vec3 n = m * ro;
+  vec3 k = abs(m) * boxSize;
+  vec3 t1 = -n - k;
+  vec3 t2 = -n + k;
+
+  float tN = max(max(t1.x, t1.y), t1.z);
+  float tF = min(min(t2.x, t2.y), t2.z);
+
+  if (tN < tF && tN > 0.0) {
+    vec3 pos = ro + rd * tN;
+    vec3 nor = -sign(rd) * step(t1.yzx, t1.xyz) * step(t1.zxy, t1.xyz);
+
+    // Which face?
+    vec2 faceUv;
+    if (abs(nor.x) > 0.5) faceUv = pos.yz;
+    else if (abs(nor.y) > 0.5) faceUv = pos.xz;
+    else faceUv = pos.xy;
+
+    faceUv = faceUv / boxSize.x * 0.5 + 0.5;
+
+    // Lament Configuration pattern
+    float pattern = 0.0;
+
+    // Circular patterns
+    float circle = length(faceUv - 0.5);
+    pattern += smoothstep(0.02, 0.0, abs(circle - 0.3) - 0.02);
+    pattern += smoothstep(0.02, 0.0, abs(circle - 0.15) - 0.01);
+
+    // Cross patterns
+    pattern += smoothstep(0.03, 0.0, abs(faceUv.x - 0.5)) * step(abs(faceUv.y - 0.5), 0.3);
+    pattern += smoothstep(0.03, 0.0, abs(faceUv.y - 0.5)) * step(abs(faceUv.x - 0.5), 0.3);
+
+    // Corner ornaments
+    for (float i = 0.0; i < 4.0; i++) {
+      vec2 corner = vec2(mod(i, 2.0), floor(i / 2.0)) * 0.6 + 0.2;
+      float d = length(faceUv - corner);
+      pattern += smoothstep(0.02, 0.0, abs(d - 0.08) - 0.01);
+    }
+
+    // Golden color with dark pattern
+    vec3 gold = vec3(0.8, 0.6, 0.2);
+    vec3 dark = vec3(0.1, 0.05, 0.02);
+
+    // Lighting
+    vec3 lightDir = normalize(vec3(1.0, 1.0, -1.0));
+    float diff = max(dot(nor, lightDir), 0.0) * 0.7 + 0.3;
+
+    col = mix(gold, dark, pattern * 0.8) * diff;
+
+    // Specular
+    vec3 viewDir = normalize(-rd);
+    vec3 halfDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(nor, halfDir), 0.0), 32.0);
+    col += vec3(1.0, 0.9, 0.7) * spec * 0.5;
+  }
+
+  // Atmospheric glow
+  col += vec3(0.1, 0.05, 0.02) * (1.0 - length(uv));
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Lament', desc: 'Puzzle box from Hellraiser' });
+
+register('endgame', `
+// XScreenSaver Endgame - Chess endgame positions
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  uv.x *= u_resolution.x / u_resolution.y;
+  uv = uv * 0.8 + 0.1;
+  vec3 col = vec3(0.1);
+
+  // Center the board
+  vec2 boardUv = (uv - 0.5) * 1.2 + 0.5;
+
+  // Check if on board
+  if (boardUv.x >= 0.0 && boardUv.x <= 1.0 && boardUv.y >= 0.0 && boardUv.y <= 1.0) {
+    // Board squares
+    vec2 square = floor(boardUv * 8.0);
+    float checker = mod(square.x + square.y, 2.0);
+    vec3 lightSquare = vec3(0.9, 0.85, 0.75);
+    vec3 darkSquare = vec3(0.4, 0.25, 0.15);
+    col = mix(darkSquare, lightSquare, checker);
+
+    // Piece positions (simple endgame: K+R vs K)
+    float t = u_time * 0.3;
+
+    // White King at e1 moving
+    vec2 wKing = vec2(4.0 + sin(t) * 2.0, 0.0 + cos(t * 0.7) * 1.5);
+    wKing = floor(wKing) + 0.5;
+
+    // White Rook
+    vec2 wRook = vec2(7.0, 3.0 + sin(t * 0.5) * 2.0);
+    wRook = floor(wRook) + 0.5;
+
+    // Black King (being chased)
+    vec2 bKing = vec2(4.0 + cos(t * 0.8) * 2.0, 6.0 + sin(t * 0.6));
+    bKing = floor(bKing) + 0.5;
+
+    // Draw pieces
+    vec2 pixelSquare = boardUv * 8.0;
+
+    // White King
+    float d = length(pixelSquare - wKing);
+    if (d < 0.45) {
+      // Crown shape
+      float crown = smoothstep(0.4, 0.35, d);
+      vec2 p = (pixelSquare - wKing) / 0.4;
+      float cross = max(abs(p.x), abs(p.y));
+      crown *= smoothstep(0.3, 0.2, min(cross, length(p) - 0.1));
+      col = mix(col, vec3(1.0), crown);
+      col = mix(col, vec3(0.2), smoothstep(0.3, 0.25, d) * (1.0 - crown));
+    }
+
+    // White Rook
+    d = length(pixelSquare - wRook);
+    if (d < 0.4) {
+      float rook = smoothstep(0.4, 0.35, d);
+      vec2 p = (pixelSquare - wRook) / 0.4;
+      // Castle shape
+      float castle = step(abs(p.x), 0.6) * step(abs(p.y), 0.8);
+      float battlement = step(0.5, p.y) * step(0.3, abs(p.x));
+      castle *= 1.0 - battlement * 0.5;
+      col = mix(col, vec3(1.0), rook * castle);
+      col = mix(col, vec3(0.2), smoothstep(0.35, 0.3, d) * (1.0 - rook * castle));
+    }
+
+    // Black King
+    d = length(pixelSquare - bKing);
+    if (d < 0.45) {
+      float crown = smoothstep(0.4, 0.35, d);
+      col = mix(col, vec3(0.1), crown);
+      col = mix(col, vec3(0.0), smoothstep(0.3, 0.25, d) * (1.0 - crown * 0.5));
+    }
+  }
+
+  // Board border
+  float border = smoothstep(0.01, 0.0, abs(boardUv.x) - 0.01) +
+                 smoothstep(0.01, 0.0, abs(boardUv.x - 1.0) - 0.01) +
+                 smoothstep(0.01, 0.0, abs(boardUv.y) - 0.01) +
+                 smoothstep(0.01, 0.0, abs(boardUv.y - 1.0) - 0.01);
+  border *= step(0.0, boardUv.x) * step(boardUv.x, 1.0) * step(0.0, boardUv.y) * step(boardUv.y, 1.0);
+  col = mix(col, vec3(0.3, 0.15, 0.05), min(border, 1.0));
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Endgame', desc: 'Chess endgame visualization' });
+
+// ============================================================================
+// KDE SCREENSAVERS
+// ============================================================================
+
+register('euphoria', `
+// KDE Euphoria - flowing ethereal wisps
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.0);
+
+  float t = u_time * 0.3;
+
+  // Multiple wisp layers
+  for (float i = 0.0; i < 6.0; i++) {
+    float phase = i * 1.047;
+
+    // Flowing path
+    vec2 center = vec2(
+      sin(t + phase) * 0.3 + sin(t * 0.7 + phase * 2.0) * 0.2,
+      cos(t * 0.8 + phase) * 0.3 + cos(t * 0.5 + phase * 1.5) * 0.2
+    );
+
+    // Wisp shape using noise
+    float dist = length(uv - center);
+    float wisp = 0.0;
+
+    for (float j = 0.0; j < 20.0; j++) {
+      float angle = j / 20.0 * 6.28318 + t * 0.5 + i;
+      float r = 0.1 + sin(j * 0.5 + t + i) * 0.05;
+      vec2 wispPoint = center + vec2(cos(angle), sin(angle)) * r;
+      wisp += smoothstep(0.05, 0.0, length(uv - wispPoint));
+    }
+
+    vec3 wispCol = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + i * 0.8 + t * 0.2);
+    col += wispCol * wisp * 0.1;
+
+    // Core glow
+    col += wispCol * exp(-dist * 10.0) * 0.3;
+  }
+
+  // Soft glow
+  col = pow(col, vec3(0.8));
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Euphoria', desc: 'Ethereal flowing wisps' });
+
+register('fieldlines', `
+// KDE Fieldlines - electromagnetic field visualization
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.02, 0.02, 0.05);
+
+  float t = u_time * 0.5;
+
+  // Two magnetic poles
+  vec2 pole1 = vec2(sin(t * 0.3) * 0.25, cos(t * 0.4) * 0.15);
+  vec2 pole2 = vec2(-sin(t * 0.35) * 0.25, -cos(t * 0.45) * 0.15);
+
+  // Calculate field direction
+  vec2 toP1 = uv - pole1;
+  vec2 toP2 = uv - pole2;
+  float r1 = length(toP1);
+  float r2 = length(toP2);
+
+  // Field from positive pole, field to negative pole
+  vec2 field = toP1 / (r1 * r1 * r1 + 0.01) - toP2 / (r2 * r2 * r2 + 0.01);
+
+  // Field lines (using stream function approximation)
+  float angle1 = atan(toP1.y, toP1.x);
+  float angle2 = atan(toP2.y, toP2.x);
+  float streamFunc = angle1 - angle2;
+
+  // Create field lines
+  float lines = sin(streamFunc * 8.0);
+  lines = smoothstep(0.8, 1.0, abs(lines));
+
+  // Color based on field strength
+  float strength = length(field);
+  vec3 fieldCol = mix(vec3(0.2, 0.4, 0.8), vec3(0.8, 0.2, 0.4), smoothstep(0.0, 2.0, strength));
+
+  col += fieldCol * lines * 0.8;
+
+  // Pole glow
+  col += vec3(0.8, 0.3, 0.2) * exp(-r1 * 8.0);  // Positive (red)
+  col += vec3(0.2, 0.3, 0.8) * exp(-r2 * 8.0);  // Negative (blue)
+
+  // Field direction indicators (small arrows)
+  vec2 gridUv = fract(uv * 8.0 + 0.5) - 0.5;
+  vec2 gridId = floor(uv * 8.0 + 0.5);
+  vec2 gridCenter = gridId / 8.0;
+
+  vec2 localField = normalize(field + 0.001);
+  float arrow = dot(normalize(gridUv + 0.001), localField);
+  arrow = smoothstep(0.3, 0.5, arrow) * smoothstep(0.15, 0.1, length(gridUv));
+  col += vec3(0.5) * arrow * 0.3;
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Fieldlines', desc: 'Electromagnetic field' });
+
+register('fireflies', `
+// KDE Fireflies - glowing particles in darkness
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.01, 0.02, 0.04);  // Dark blue night
+
+  float t = u_time;
+
+  // Many fireflies
+  for (float i = 0.0; i < 40.0; i++) {
+    // Random base position
+    vec2 basePos = vec2(
+      hash(vec2(i, 0.0)) - 0.5,
+      hash(vec2(i, 1.0)) - 0.5
+    ) * 1.2;
+
+    // Gentle floating motion
+    vec2 pos = basePos + vec2(
+      sin(t * 0.5 + i * 0.7) * 0.05,
+      cos(t * 0.4 + i * 0.9) * 0.08
+    );
+
+    // Blinking pattern
+    float blink = sin(t * (1.0 + hash(vec2(i, 2.0))) + i * 2.0);
+    blink = smoothstep(0.3, 0.8, blink);
+
+    // Glow
+    float d = length(uv - pos);
+    float glow = exp(-d * 50.0) * blink;
+
+    // Warm yellow-green firefly color
+    vec3 fireflyCol = mix(
+      vec3(0.4, 0.8, 0.2),  // Green
+      vec3(1.0, 0.9, 0.3),  // Yellow
+      hash(vec2(i, 3.0))
+    );
+
+    col += fireflyCol * glow;
+
+    // Subtle trail
+    for (float tr = 1.0; tr < 4.0; tr++) {
+      vec2 trailPos = basePos + vec2(
+        sin(t * 0.5 + i * 0.7 - tr * 0.1) * 0.05,
+        cos(t * 0.4 + i * 0.9 - tr * 0.08) * 0.08
+      );
+      float trailD = length(uv - trailPos);
+      col += fireflyCol * exp(-trailD * 80.0) * blink * (1.0 - tr / 4.0) * 0.2;
+    }
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Fireflies', desc: 'Glowing fireflies in darkness' });
+
+register('flux', `
+// KDE Flux - flowing energy streams
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.0);
+
+  float t = u_time * 0.4;
+
+  // Multiple flux streams
+  for (float i = 0.0; i < 5.0; i++) {
+    float phase = i * 1.256;
+
+    // Stream path
+    for (float j = 0.0; j < 50.0; j++) {
+      float jt = j / 50.0;
+      float streamT = t + jt * 2.0 + phase;
+
+      vec2 pos = vec2(
+        sin(streamT * 1.5 + i) * 0.4 * (1.0 - jt * 0.3),
+        cos(streamT * 0.8 + i * 2.0) * 0.3 + (jt - 0.5) * 0.5
+      );
+
+      float d = length(uv - pos);
+      float particle = exp(-d * 40.0) * (1.0 - jt);
+
+      vec3 streamCol = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + i + jt * 3.0);
+      col += streamCol * particle * 0.3;
+    }
+  }
+
+  // Energy core
+  float core = length(uv);
+  col += vec3(0.3, 0.5, 0.8) * exp(-core * 5.0) * 0.5;
+
+  // Pulse
+  float pulse = sin(t * 3.0) * 0.5 + 0.5;
+  col *= 0.8 + pulse * 0.4;
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Flux', desc: 'Flowing energy streams' });
+
+register('helios', `
+// KDE Helios - plasma sun orb
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.0);
+
+  float t = u_time * 0.5;
+  float r = length(uv);
+  float angle = atan(uv.y, uv.x);
+
+  // Sun surface
+  float sunRadius = 0.3;
+
+  if (r < sunRadius) {
+    // Surface turbulence
+    float turb = fbm(uv * 8.0 + t) * 0.5;
+    turb += fbm(uv * 16.0 - t * 0.5) * 0.25;
+
+    // Sunspots
+    float spots = smoothstep(0.6, 0.4, fbm(uv * 4.0 + vec2(t * 0.1, 0.0)));
+
+    // Color gradient from center to edge
+    vec3 coreCol = vec3(1.0, 1.0, 0.9);
+    vec3 surfaceCol = vec3(1.0, 0.6, 0.1);
+    vec3 spotCol = vec3(0.6, 0.2, 0.0);
+
+    float edgeDark = smoothstep(0.0, sunRadius, r);
+    col = mix(coreCol, surfaceCol, edgeDark);
+    col = mix(col, spotCol, spots * 0.5);
+    col += turb * vec3(0.2, 0.1, 0.0);
+
+    // Limb darkening
+    col *= 1.0 - edgeDark * 0.4;
+  }
+
+  // Corona
+  float corona = 0.0;
+  for (float i = 0.0; i < 12.0; i++) {
+    float a = i / 12.0 * 6.28318;
+    float flare = sin(a * 3.0 + t) * 0.5 + 0.5;
+    float ray = smoothstep(sunRadius + 0.15 * flare, sunRadius, r);
+    ray *= smoothstep(0.3, 0.0, abs(mod(angle - a + 3.14159, 6.28318) - 3.14159));
+    corona += ray;
+  }
+  col += vec3(1.0, 0.7, 0.3) * corona * 0.5;
+
+  // Glow
+  float glow = exp(-(r - sunRadius) * 3.0) * step(sunRadius, r);
+  col += vec3(1.0, 0.5, 0.2) * glow;
+
+  // Outer corona
+  float outerCorona = exp(-(r - sunRadius) * 1.5) * step(sunRadius, r);
+  col += vec3(0.3, 0.2, 0.1) * outerCorona;
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Helios', desc: 'Plasma sun orb' });
+
+register('lattice', `
+// KDE Lattice - rotating 3D lattice structure
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.02, 0.02, 0.05);
+
+  float t = u_time * 0.3;
+
+  // Rotation
+  float cosX = cos(t), sinX = sin(t);
+  float cosY = cos(t * 0.7), sinY = sin(t * 0.7);
+  float cosZ = cos(t * 0.5), sinZ = sin(t * 0.5);
+
+  // 3D lattice points
+  for (float x = -2.0; x <= 2.0; x++) {
+    for (float y = -2.0; y <= 2.0; y++) {
+      for (float z = -2.0; z <= 2.0; z++) {
+        vec3 p = vec3(x, y, z) * 0.15;
+
+        // Rotate X
+        float y1 = p.y * cosX - p.z * sinX;
+        float z1 = p.y * sinX + p.z * cosX;
+        p.y = y1; p.z = z1;
+
+        // Rotate Y
+        float x1 = p.x * cosY + p.z * sinY;
+        z1 = -p.x * sinY + p.z * cosY;
+        p.x = x1; p.z = z1;
+
+        // Rotate Z
+        x1 = p.x * cosZ - p.y * sinZ;
+        y1 = p.x * sinZ + p.y * cosZ;
+        p.x = x1; p.y = y1;
+
+        // Project
+        float perspective = 1.0 / (1.0 + p.z * 0.5);
+        vec2 proj = p.xy * perspective;
+
+        // Distance and draw
+        float d = length(uv - proj);
+        float size = 0.015 * perspective;
+        float point = smoothstep(size, size * 0.5, d);
+
+        // Color by depth
+        vec3 nodeCol = mix(vec3(0.2, 0.4, 0.8), vec3(0.8, 0.4, 0.2), (p.z + 0.3) / 0.6);
+        col += nodeCol * point * perspective;
+
+        // Connect to neighbors (only positive direction to avoid duplicates)
+        vec3 neighbors[3];
+        neighbors[0] = vec3(x + 1.0, y, z);
+        neighbors[1] = vec3(x, y + 1.0, z);
+        neighbors[2] = vec3(x, y, z + 1.0);
+
+        for (int n = 0; n < 3; n++) {
+          if (neighbors[n].x <= 2.0 && neighbors[n].y <= 2.0 && neighbors[n].z <= 2.0) {
+            vec3 np = neighbors[n] * 0.15;
+
+            // Same rotations
+            y1 = np.y * cosX - np.z * sinX;
+            z1 = np.y * sinX + np.z * cosX;
+            np.y = y1; np.z = z1;
+
+            x1 = np.x * cosY + np.z * sinY;
+            z1 = -np.x * sinY + np.z * cosY;
+            np.x = x1; np.z = z1;
+
+            x1 = np.x * cosZ - np.y * sinZ;
+            y1 = np.x * sinZ + np.y * cosZ;
+            np.x = x1; np.y = y1;
+
+            float np_persp = 1.0 / (1.0 + np.z * 0.5);
+            vec2 nproj = np.xy * np_persp;
+
+            float lineDist = line(uv, proj, nproj);
+            float lineAlpha = smoothstep(0.004, 0.001, lineDist);
+            col += vec3(0.3, 0.4, 0.5) * lineAlpha * min(perspective, np_persp) * 0.5;
+          }
+        }
+      }
+    }
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Lattice', desc: 'Rotating 3D lattice' });
+
+register('solarwinds', `
+// KDE Solar Winds - aurora-like effect
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec3 col = vec3(0.0);
+
+  float t = u_time * 0.3;
+
+  // Aurora curtains
+  for (float i = 0.0; i < 5.0; i++) {
+    float phase = i * 0.7;
+
+    // Vertical wave
+    float wave = sin(uv.x * 6.0 + t + phase) * 0.1;
+    wave += sin(uv.x * 10.0 - t * 1.5 + phase) * 0.05;
+    wave += sin(uv.x * 15.0 + t * 0.5 + phase) * 0.03;
+
+    // Aurora position
+    float auroraY = 0.6 + wave + i * 0.05;
+
+    // Vertical gradient (aurora rays)
+    float rays = smoothstep(auroraY + 0.3, auroraY, uv.y);
+    rays *= smoothstep(auroraY - 0.2, auroraY, uv.y);
+
+    // Horizontal variation
+    float horiz = fbm(vec2(uv.x * 3.0 + t * 0.2, i)) * 0.5 + 0.5;
+
+    // Color
+    vec3 auroraCol;
+    if (i < 2.0) {
+      auroraCol = mix(vec3(0.1, 0.8, 0.3), vec3(0.1, 0.4, 0.2), uv.y);  // Green
+    } else if (i < 4.0) {
+      auroraCol = mix(vec3(0.2, 0.3, 0.8), vec3(0.5, 0.2, 0.6), uv.y);  // Blue-purple
+    } else {
+      auroraCol = mix(vec3(0.8, 0.2, 0.3), vec3(0.6, 0.1, 0.2), uv.y);  // Red
+    }
+
+    col += auroraCol * rays * horiz * 0.4;
+  }
+
+  // Stars in background
+  vec2 starGrid = floor(uv * 50.0);
+  float star = step(0.98, hash(starGrid));
+  float twinkle = sin(u_time * 3.0 + hash(starGrid + 100.0) * 6.28) * 0.5 + 0.5;
+  col += vec3(1.0) * star * twinkle * 0.5 * (1.0 - col.g);
+
+  // Dark ground
+  col *= smoothstep(0.0, 0.15, uv.y);
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Solar Winds', desc: 'Aurora borealis effect' });
+
 export default ass;
