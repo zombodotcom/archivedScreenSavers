@@ -87,7 +87,7 @@ const ERAS = {
     year: '2024',
     desc: 'Modern WebGL creations',
     computer: 'modern-display',
-    effects: ['pipes_ag', 'matrix_ag', 'city_ag', 'fractal_ag', 'lava_ag', 'gyroid_ag', 'wormhole_ag', 'fireworks', 'warp', 'rain', 'aurora', 'neongrid', 'hyperspace', 'timetunnel', 'glplanet', 'plasma', 'euphoria', 'helios', 'fireflies', 'electropaint', 'frostfire']
+    effects: ['pipes', 'pipes_ag', 'matrix_ag', 'city_ag', 'fractal_ag', 'lava_ag', 'gyroid_ag', 'wormhole_ag', 'fireworks', 'warp_ag', 'rain_ag', 'aurora_ag', 'neongrid_ag', 'hyperspace_ag', 'timetunnel_ag', 'glplanet_ag', 'plasma', 'euphoria', 'helios_ag', 'fireflies_ag', 'electropaint_ag', 'frostfire']
   }
 };
 

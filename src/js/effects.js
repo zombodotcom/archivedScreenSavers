@@ -4380,4 +4380,345 @@ void main() {
     fragColor = vec4(col, 1.0);
 }`, { name: 'Wormhole Warp', desc: 'Hyperspace Tunnel -Antigravity' });
 
+register('warp_ag', `
+#define MAX_STEPS 60
+#define MAX_DIST 50.0
+
+mat2 rot(float a) { return mat2(cos(a), -sin(a), sin(a), cos(a)); }
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+    vec3 col = vec3(0.0);
+    float t = u_time * 2.0;
+    
+    for(float i=0.0; i<1.0; i+=0.05) {
+        float z = fract(i - t*0.2);
+        float size = 0.2;
+        float fade = smoothstep(0.0, 0.5, z) * smoothstep(1.0, 0.8, z);
+        
+        vec2 p = uv * z * 20.0;
+        p *= rot(z * 2.0 + t * 0.5);
+        
+        vec2 id = floor(p);
+        vec2 f = fract(p) - 0.5;
+        
+        float h = fract(sin(dot(id, vec2(12.9898, 78.233))) * 43758.5453);
+        if(h > 0.9) {
+            float star = smoothstep(size, 0.0, length(f));
+            vec3 starCol = 0.5 + 0.5 * cos(h * 6.28 + vec3(0,2,4));
+            col += starCol * star * fade * 2.0;
+        }
+        
+        float dust = sin(p.x * 2.0) * cos(p.y * 2.0) * 0.5 + 0.5;
+        col += vec3(0.1, 0.3, 0.6) * dust * fade * 0.05;
+    }
+    
+    col += vec3(0.5, 0.8, 1.0) * smoothstep(0.2, 0.0, length(uv));
+    
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Warp Drive', desc: 'Hyperspeed Star Warp -Antigravity' });
+
+register('rain_ag', `
+float hash12(vec2 p) {
+    vec3 p3  = fract(vec3(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+void main() {
+    vec2 p = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+    
+    float t = u_time * 0.5;
+    vec3 col = vec3(0.0);
+    
+    for(float i=0.; i<30.; i++) {
+        vec2 pos = vec2(hash12(vec2(i, 0.0)), hash12(vec2(i, 1.0))) * 2.0 - 1.0;
+        pos.x += sin(t * 0.1 + i) * 0.1;
+        
+        float d = length(p - pos);
+        float bokeh = smoothstep(0.1 + hash12(vec2(i))*0.05, 0.09, d) * smoothstep(0.0, 0.02, d);
+        
+        vec3 bokehCol = 0.5 + 0.5 * cos(hash12(vec2(i, 2.0)) * 6.28 + vec3(0,1,2));
+        col += bokehCol * bokeh * 0.6;
+    }
+    
+    col += vec3(0.1, 0.2, 0.4) * (1.0 - p.y * 0.5);
+    
+    vec2 grid = floor(p * 15.0);
+    vec2 f = fract(p * 15.0) - 0.5;
+    
+    float dropDrop = fract(t * (0.5 + hash12(grid)) + hash12(grid + 5.0));
+    f.y += dropDrop * 2.0 - 1.0;
+    
+    float drop = smoothstep(0.2, 0.0, length(f));
+    
+    if (drop > 0.0) {
+        col = col * 0.4 + 0.6 * vec3(0.8, 0.9, 1.0) * drop;
+    }
+    
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Cinematic Rain', desc: 'Raindrops on Glass -Antigravity' });
+
+register('aurora_ag', `
+mat2 rot(float a) { return mat2(cos(a), -sin(a), sin(a), cos(a)); }
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+    vec3 col = vec3(0.0);
+    
+    vec3 ro = vec3(0.0, -1.0, -3.0);
+    vec3 rd = normalize(vec3(uv, 1.0));
+    
+    rd.xy *= rot(sin(u_time * 0.1) * 0.1);
+    
+    col += vec3(0.02, 0.05, 0.1) * (1.0 - uv.y);
+    
+    float t = u_time * 0.2;
+    for(float i=1.0; i<40.0; i+=1.5) {
+        float z = i * 0.1 + 1.0;
+        vec2 p = uv * z;
+        p.x += sin(p.y * 2.0 + t + i * 0.1) * 0.5;
+        
+        float ray = abs(sin(p.x * 5.0 + t * 2.0));
+        ray = smoothstep(0.8, 1.0, ray) * exp(-p.y * 1.5 - 1.0);
+        
+        vec3 auroraCol = mix(vec3(0.0, 1.0, 0.5), vec3(0.5, 0.0, 1.0), sin(p.x * 2.0 + t)*0.5+0.5);
+        col += auroraCol * ray * 0.3 / (z * 0.5);
+    }
+    
+    float star = fract(sin(dot(floor(uv * 500.0), vec2(12.9898, 78.233))) * 43758.5453);
+    col += vec3(1.0) * step(0.995, star) * (sin(u_time * 5.0 + star * 100.0) * 0.5 + 0.5);
+    
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Aurora Borealis', desc: 'Volumetric Northern Lights -Antigravity' });
+
+register('neongrid_ag', `
+mat2 rot(float a) { return mat2(cos(a), -sin(a), sin(a), cos(a)); }
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+    vec3 col = vec3(0.0);
+    
+    if (uv.y > 0.0) {
+        float sun = length(uv - vec2(0.0, 0.2));
+        float s = smoothstep(0.3, 0.28, sun);
+        s *= step(0.02, mod(uv.y * 20.0 - u_time, 0.1)) + step(0.1, sun);
+        col += mix(vec3(1.0, 0.0, 0.5), vec3(1.0, 0.8, 0.0), uv.y * 2.0) * s;
+        col += vec3(0.1, 0.0, 0.2) * (1.0 - uv.y) * (1.0 - s);
+    } else {
+        vec3 ro = vec3(0.0, 0.5, u_time * 2.0);
+        vec3 rd = normalize(vec3(uv.x, uv.y - 0.2, 1.0));
+        
+        float d = -ro.y / rd.y;
+        if (d > 0.0) {
+            vec3 p = ro + rd * d;
+            vec2 grid = fract(p.xz);
+            float lines = step(0.9, grid.x) + step(0.9, grid.y);
+            float distanceFade = exp(-d * 0.1);
+            col += vec3(0.0, 1.0, 1.0) * lines * distanceFade;
+            col += vec3(0.1, 0.0, 0.2) * distanceFade;
+        }
+    }
+    
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Synthwave Grid', desc: '1980s Retrowave -Antigravity' });
+
+register('glplanet_ag', `
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+    vec3 col = vec3(0.0);
+    
+    float d = length(uv);
+    if (d < 0.4) {
+        float z = sqrt(0.16 - d*d);
+        vec3 n = normalize(vec3(uv, z));
+        
+        float t = u_time * 0.5;
+        float s = sin(t), c = cos(t);
+        n.xz = vec2(n.x * c - n.z * s, n.x * s + n.z * c);
+        
+        float h = fbm(n.xy * 5.0 + n.z * 5.0);
+        
+        vec3 ocean = vec3(0.1, 0.4, 0.8) + h * 0.2;
+        vec3 land = mix(vec3(0.2, 0.6, 0.2), vec3(0.8, 0.7, 0.5), smoothstep(0.4, 0.7, h));
+        vec3 planetCol = mix(ocean, land, smoothstep(0.45, 0.55, h));
+        
+        float clouds = fbm(n.xz * 8.0 - u_time * 0.2);
+        planetCol = mix(planetCol, vec3(1.0), smoothstep(0.4, 0.8, clouds) * 0.8);
+        
+        vec3 light = normalize(vec3(1.0, 0.5, 1.0));
+        float diff = max(dot(vec3(uv, z)/0.4, light), 0.0);
+        
+        float edge = smoothstep(0.3, 0.4, d);
+        
+        col = planetCol * diff * 1.2;
+        col += vec3(0.2, 0.5, 1.0) * edge * diff * 0.5;
+    } else {
+        float glow = exp(-(d - 0.4) * 20.0);
+        vec3 lightDef = normalize(vec3(1.0, 0.5, 0.0));
+        float side = dot(normalize(uv), lightDef.xy) * 0.5 + 0.5;
+        col += vec3(0.2, 0.5, 1.0) * glow * side * 0.8;
+        
+        float star = fract(sin(dot(floor(uv * 300.0), vec2(12.9898, 78.233))) * 43758.5453);
+        col += vec3(1.0) * step(0.99, star) * (0.5 + 0.5*sin(u_time * 5.0 + star*100.0));
+    }
+    
+    fragColor = vec4(col, 1.0);
+}`, { name: '3D Planet', desc: 'Procedural Earth -Antigravity' });
+
+register('hyperspace_ag', `
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+    vec3 col = vec3(0.0);
+    
+    float a = atan(uv.y, uv.x);
+    float r = length(uv);
+    
+    float t = u_time * 4.0;
+    float z = 1.0 / r;
+    z -= t;
+    a += sin(z * 0.1) + t * 0.1;
+    
+    float val = sin(a * 10.0) * cos(z * 2.0) + sin(z * 5.0 - a * 4.0);
+    float glow = smoothstep(0.8, 1.0, val);
+    
+    vec3 neon = mix(vec3(0.0, 1.0, 1.0), vec3(1.0, 0.0, 1.0), sin(z * 0.5)*0.5+0.5);
+    col += neon * glow * r;
+    
+    float str = fract(sin(dot(floor(z), 78.233)) * 43758.5453);
+    float lines = step(0.95, fract(a * 20.0 + str * 10.0));
+    col += vec3(1.0) * lines * r * 2.0;
+    
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Hyperspace', desc: 'Multidimensional Tunnel -Antigravity' });
+
+register('timetunnel_ag', `
+mat2 rot(float a) { return mat2(cos(a), -sin(a), sin(a), cos(a)); }
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+    vec3 col = vec3(0.0);
+    
+    float r = length(uv);
+    float a = atan(uv.y, uv.x);
+    float t = u_time;
+    
+    for (float i=0.0; i<4.0; i++) {
+        float z = fract(i * 0.25 - t * 0.1);
+        float scale = mix(10.0, 0.1, z);
+        float fade = smoothstep(0.0, 0.2, z) * smoothstep(1.0, 0.6, z);
+        
+        vec2 p = uv * scale;
+        p *= rot(t * (mod(i, 2.0) == 0.0 ? 1.0 : -1.0) * 0.5 + i);
+        
+        float r2 = length(p);
+        float a2 = atan(p.y, p.x);
+        
+        float gear = smoothstep(0.5, 0.48, r2) - smoothstep(0.4, 0.38, r2);
+        gear *= step(0.5, fract(a2 * 6.0 / 6.28 + sin(r2 * 10.0)*0.1));
+        
+        float hands = smoothstep(0.02, 0.0, abs(p.x)) * step(0.0, p.y) * step(p.y, 0.4);
+        hands += smoothstep(0.02, 0.0, abs(p.y)) * step(0.0, p.x) * step(p.x, 0.3);
+        
+        vec3 gearCol = mix(vec3(0.8, 0.6, 0.2), vec3(0.3, 0.7, 0.9), i/4.0);
+        col += gearCol * (gear + hands) * fade;
+    }
+    
+    col += vec3(0.2, 0.4, 0.8) * exp(-r * 10.0) * (sin(t * 10.0) * 0.5 + 0.5);
+    
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Time Tunnel', desc: 'Clockwork Dimensional Rift -Antigravity' });
+
+register('helios_ag', `
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+    vec3 col = vec3(0.0);
+    
+    float r = length(uv);
+    float t = u_time;
+    
+    if (r < 0.3) {
+        vec3 p = vec3(uv * 3.0, sqrt(max(0.0, 0.09 - r*r))*3.0);
+        float n = fbm(p * 2.0 - vec3(0.0, 0.0, t * 0.5));
+        
+        vec3 sunBase = vec3(1.0, 0.2, 0.0);
+        vec3 sunHot = vec3(1.0, 0.8, 0.2);
+        col = mix(sunBase, sunHot, smoothstep(0.3, 0.7, n));
+        col *= smoothstep(0.1, 0.3, fbm(p * 4.0 + t));
+        col *= smoothstep(0.3, 0.25, r);
+    } else {
+        float angle = atan(uv.y, uv.x);
+        float rays = fbm(vec2(angle * 5.0, r * 2.0 - t * 2.0));
+        float corona = exp(-(r - 0.3) * 5.0);
+        col += vec3(1.0, 0.5, 0.1) * rays * corona * 1.5;
+        col += vec3(1.0, 0.3, 0.0) * exp(-(r - 0.3) * 3.0) * 0.5;
+    }
+    
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Helios', desc: 'Volumetric Plasma Sun -Antigravity' });
+
+register('fireflies_ag', `
+void main() {
+    vec2 p = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+    vec3 col = vec3(0.0);
+    
+    float t = u_time;
+    float r = length(p);
+    col += vec3(0.02, 0.05, 0.03) * (1.0 - r);
+    
+    for (float i=0.0; i<60.0; i++) {
+        float h1 = fract(sin(i * 12.9898) * 43758.5453);
+        float h2 = fract(sin((i+10.0) * 78.233) * 43758.5453);
+        float h3 = fract(sin((i+20.0) * 37.719) * 43758.5453);
+        
+        vec2 pos = vec2(
+            sin(t * (0.2 + h1*0.5) + h2 * 6.28) * 0.8,
+            cos(t * (0.3 + h2*0.4) + h3 * 6.28) * 0.5
+        );
+        
+        float z = sin(t * 0.5 + h1 * 10.0) * 0.5 + 0.5;
+        float size = mix(0.005, 0.02, z);
+        
+        float d = length(p - pos);
+        float blink = sin(t * (2.0 + h3*5.0) + h1 * 10.0) * 0.5 + 0.5;
+        blink = smoothstep(0.2, 0.8, blink);
+        
+        float glow = size / (d*d + 0.001);
+        vec3 flyCol = mix(vec3(0.5, 1.0, 0.2), vec3(1.0, 0.8, 0.1), h2);
+        
+        col += flyCol * glow * blink * z * 0.02;
+    }
+    
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Fireflies', desc: 'Glowing Biome Swarm -Antigravity' });
+
+register('electropaint_ag', `
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+    vec3 col = vec3(0.0);
+    
+    float t = u_time * 0.2;
+    vec2 q = vec2(fbm(uv + t), fbm(uv + vec2(5.2, 1.3) - t));
+    vec2 r = vec2(fbm(uv + 4.0 * q + vec2(1.7, 9.2) + t*2.0), 
+                  fbm(uv + 4.0 * q + vec2(8.3, 2.8) - t*1.5));
+                  
+    float f = fbm(uv + 4.0 * r);
+    
+    vec3 c1 = vec3(0.1, 0.0, 0.3);
+    vec3 c2 = vec3(0.9, 0.2, 0.5);
+    vec3 c3 = vec3(0.1, 0.8, 0.9);
+    vec3 c4 = vec3(1.0, 1.0, 0.2);
+    
+    col = mix(c1, c2, clamp(r.x * 2.0, 0.0, 1.0));
+    col = mix(col, c3, clamp(r.y * 2.0, 0.0, 1.0));
+    col = mix(col, c4, clamp(f * f * 2.0, 0.0, 1.0));
+    
+    float edge = abs(fract(f * 10.0 + t * 5.0) - 0.5) * 2.0;
+    col += vec3(1.0) * smoothstep(0.8, 1.0, edge) * f;
+    
+    col = smoothstep(0.0, 1.0, col);
+    
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Electropaint', desc: 'Fluid Flow Paint Simulation -Antigravity' });
+
 export default ass;
