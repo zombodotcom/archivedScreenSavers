@@ -4001,4 +4001,383 @@ void main() {
   fragColor = vec4(col, 1.0);
 }`, { name: 'Frost & Fire', desc: 'Colors emanating from center' });
 
+register('pipes_ag', `
+#define MAX_STEPS 100
+#define MAX_DIST 50.0
+#define SURF_DIST 0.01
+
+mat2 rot(float a) {
+    float s=sin(a), c=cos(a);
+    return mat2(c, -s, s, c);
+}
+
+float map(vec3 p) {
+    vec3 id = floor(p);
+    p = fract(p) - 0.5;
+    
+    // Pipes
+    float d1 = length(p.xy) - 0.1;
+    float d2 = length(p.yz) - 0.1;
+    float d3 = length(p.xz) - 0.1;
+    float d = min(min(d1, d2), d3);
+    
+    // Add joints
+    d = min(d, length(p) - 0.15);
+    
+    return d;
+}
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy)/u_resolution.y;
+    
+    vec3 ro = vec3(0.0, 0.0, u_time*2.0);
+    vec3 rd = normalize(vec3(uv.x, uv.y, 1.0));
+    
+    rd.xy *= rot(u_time*0.2);
+    rd.xz *= rot(sin(u_time*0.1)*0.2);
+    
+    float d0 = 0.0;
+    vec3 col = vec3(0.0);
+    
+    for(int i=0; i<MAX_STEPS; i++) {
+        vec3 p = ro + rd * d0;
+        float dS = map(p);
+        d0 += dS;
+        
+        // Neon glow along the step
+        float g = 0.005 / (0.001 + dS*dS);
+        vec3 cell = floor(p);
+        vec3 glowCol = 0.5 + 0.5*cos(cell.x*0.1 + cell.y*0.2 + cell.z*0.3 + u_time + vec3(0,2,4));
+        col += glowCol * g * 0.02;
+        
+        if(d0 > MAX_DIST || dS < SURF_DIST) break;
+    }
+    
+    col = mix(col, vec3(0.01, 0.0, 0.05), smoothstep(10.0, MAX_DIST, d0));
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Cyberpipes', desc: 'Neon Cyberpunk Pipes -Antigravity' });
+
+register('matrix_ag', `
+#define MAX_STEPS 60
+#define MAX_DIST 25.0
+
+mat2 rot(float a) { return mat2(cos(a), -sin(a), sin(a), cos(a)); }
+
+float map(vec3 p) {
+    vec3 id = floor(p * 3.0);
+    vec3 f = fract(p * 3.0) - 0.5;
+    if (hash(id.xz) < 0.5) return 2.0;
+    return (max(max(abs(f.x), abs(f.y)), abs(f.z)) - 0.3) / 3.0;
+}
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+    vec3 ro = vec3(sin(u_time * 0.3), -u_time * 3.0, cos(u_time * 0.2));
+    vec3 rd = normalize(vec3(uv.x, uv.y - 0.5, 1.0));
+    rd.xz *= rot(sin(u_time * 0.15) * 0.3);
+    rd.xy *= rot(cos(u_time * 0.1) * 0.2);
+    
+    float d0 = 0.0;
+    vec3 col = vec3(0.0);
+    for(int i=0; i<MAX_STEPS; i++) {
+        vec3 p = ro + rd * d0;
+        float dS = map(p);
+        d0 += dS;
+        
+        if (dS < 0.05) {
+            vec3 id = floor(p * 3.0);
+            float speed = 5.0 + hash(id.xz) * 5.0;
+            float head = floor(mod(-u_time * speed + hash(id.xz + 12.3) * 100.0, 60.0) - 10.0);
+            
+            if (id.y >= head && id.y < head + 15.0) {
+                float intensity = 1.0 - (id.y - head) / 15.0;
+                vec3 glow = (id.y == head) ? vec3(0.8, 1.0, 0.8) : vec3(0.1, 0.8, 0.2);
+                col += glow * intensity * (0.5 + 0.5 * hash(id.xy + floor(u_time * 15.0))) * 0.03 / (1.0 + dS*20.0);
+            }
+        }
+        if(d0 > MAX_DIST) break;
+    }
+    col = mix(col, vec3(0.0), smoothstep(10.0, MAX_DIST, d0));
+    col = pow(col, vec3(0.8));
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Matrix 3D', desc: '3D Voxel Digital Rain -Antigravity' });
+
+register('city_ag', `
+#define MAX_STEPS 100
+#define MAX_DIST 40.0
+#define SURF_DIST 0.01
+
+mat2 rot(float a) {
+    float s=sin(a), c=cos(a);
+    return mat2(c, -s, s, c);
+}
+
+float hash21(vec2 p) {
+    p = fract(p * vec2(233.34, 851.73));
+    p += dot(p, p + 23.45);
+    return fract(p.x * p.y);
+}
+
+float map(vec3 p) {
+    vec2 id = floor(p.xz);
+    vec2 f = fract(p.xz) - 0.5;
+    
+    float h = hash21(id) * 3.0 + 0.5;
+    
+    vec3 bp = p;
+    bp.y -= h * 0.5;
+    float box = max(max(abs(f.x) - 0.35, abs(f.y) - 0.35), abs(bp.y) - h * 0.5);
+    
+    return min(p.y, box);
+}
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy)/u_resolution.y;
+    
+    vec3 ro = vec3(0.0, 2.0 + sin(u_time)*0.5, u_time*4.0);
+    vec3 rd = normalize(vec3(uv.x, uv.y - 0.2, 1.0));
+    
+    rd.xy *= rot(sin(u_time*0.5)*0.1);
+    
+    float d0 = 0.0;
+    vec3 col = vec3(0.0);
+    
+    for(int i=0; i<MAX_STEPS; i++) {
+        vec3 p = ro + rd * d0;
+        float dS = map(p);
+        d0 += dS;
+        
+        if(p.y > 0.0 && dS < 0.1) {
+            vec2 id = floor(p.xz);
+            float h = hash21(id);
+            vec3 neon = clamp(0.5 + 0.5*cos(h*6.28 + vec3(0,1,2)), 0.0, 1.0);
+            
+            vec2 wp = fract(p.xz * 10.0);
+            float w = step(0.9, wp.x) + step(0.9, wp.y);
+            col += neon * w * 0.005;
+        }
+        
+        if(d0 > MAX_DIST || dS < SURF_DIST) break;
+    }
+    
+    vec3 p = ro + rd * d0;
+    if(p.y < 0.01 && d0 < MAX_DIST) {
+        vec2 grid = fract(p.xz);
+        float line = step(0.95, grid.x) + step(0.95, grid.y);
+        col += vec3(0.1, 0.8, 1.0) * line * exp(-d0*0.1);
+    }
+    
+    col += vec3(0.8, 0.2, 0.6) * exp(-uv.y*3.0) * 0.5;
+    col = mix(col, vec3(0.02, 0.0, 0.05), pow(min(d0/MAX_DIST, 1.0), 2.0));
+    
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Voxel City', desc: 'Endless Neon Schematic City -Antigravity' });
+
+register('fractal_ag', `
+#define MAX_STEPS 80
+#define MAX_DIST 10.0
+#define SURF_DIST 0.001
+
+mat2 rot(float a) {
+    float s=sin(a), c=cos(a);
+    return mat2(c, -s, s, c);
+}
+
+float map(vec3 p) {
+    vec3 w = p;
+    float m = dot(w, w);
+    vec4 trap = vec4(abs(w), m);
+    float dz = 1.0;
+    
+    float power = 3.0 + 5.0 * (sin(u_time * 0.1) * 0.5 + 0.5);
+    
+    for(int i=0; i<5; i++) {
+        float m2 = m * m;
+        float m4 = m2 * m2;
+        dz = power * pow(m, (power - 1.0) * 0.5) * dz + 1.0;
+        
+        float r = length(w);
+        float b = power * acos(w.y / r);
+        float a = power * atan(w.x, w.z);
+        
+        w = p + pow(r, power) * vec3(sin(b)*sin(a), cos(b), sin(b)*cos(a));
+        
+        trap = min(trap, vec4(abs(w), m));
+        m = dot(w, w);
+        if(m > 256.0) break;
+    }
+    
+    return 0.25 * log(m) * sqrt(m) / dz;
+}
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy)/u_resolution.y;
+    
+    vec3 ro = vec3(0.0, 0.0, -2.5);
+    ro.xz *= rot(u_time * 0.2);
+    ro.yz *= rot(sin(u_time * 0.1) * 0.3);
+    
+    vec3 w = normalize(vec3(0.0) - ro);
+    vec3 u = normalize(cross(w, vec3(0.0, 1.0, 0.0)));
+    vec3 v = cross(u, w);
+    vec3 rd = normalize(uv.x * u + uv.y * v + 1.5 * w);
+    
+    float d0 = 0.0;
+    vec3 col = vec3(0.0);
+    
+    for(int i=0; i<MAX_STEPS; i++) {
+        vec3 p = ro + rd * d0;
+        float dS = map(p);
+        d0 += dS;
+        
+        col += vec3(0.8, 0.3, 0.5) * 0.015 / (1.0 + dS * 10.0);
+        
+        if(d0 > MAX_DIST || abs(dS) < SURF_DIST) {
+            vec3 nCol = 0.5 + 0.5*cos(float(i)*0.1 + vec3(0,2,4));
+            col += nCol * 0.5;
+            break;
+        }
+    }
+    
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Mandelbulb', desc: '3D Fractal Animation -Antigravity' });
+
+register('lava_ag', `
+#define MAX_STEPS 60
+#define SURF_DIST 0.01
+
+mat2 rot(float a) {
+    float s=sin(a), c=cos(a);
+    return mat2(c, -s, s, c);
+}
+
+float smin(float a, float b, float k) {
+    float h = clamp(0.5 + 0.5*(b-a)/k, 0.0, 1.0);
+    return mix(b, a, h) - k*h*(1.0-h);
+}
+
+float map(vec3 p) {
+    vec3 p1 = p;
+    vec3 p2 = p;
+    
+    p1.y += sin(u_time * 0.8 + p.x * 2.0) * 0.5;
+    p2.y += cos(u_time * 0.5 + p.z * 1.5) * 0.5;
+    
+    float sphere1 = length(p1 - vec3(0.0, sin(u_time)*0.5, 0.0)) - 0.5;
+    float sphere2 = length(p2 - vec3(sin(u_time*0.7)*0.6, cos(u_time*1.2)*0.4, cos(u_time*0.9)*0.5)) - 0.4;
+    float sphere3 = length(p - vec3(cos(u_time*1.1)*0.7, -sin(u_time*0.4)*0.5, sin(u_time*1.3)*0.4)) - 0.6;
+    
+    float box = p.y + 1.0; 
+    float ceil = 1.0 - p.y;
+    
+    float lava = smin(smin(sphere1, sphere2, 0.4), sphere3, 0.4);
+    
+    return smin(lava, min(box, ceil), 0.3);
+}
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5*u_resolution.xy)/u_resolution.y;
+    
+    vec3 ro = vec3(0.0, 0.0, -3.0);
+    vec3 rd = normalize(vec3(uv, 1.0));
+    
+    rd.xy *= rot(sin(u_time*0.2)*0.1);
+    
+    float d0 = 0.0;
+    vec3 col = vec3(0.0);
+    
+    for(int i=0; i<MAX_STEPS; i++) {
+        vec3 p = ro + rd * d0;
+        float dS = map(p);
+        d0 += dS;
+        
+        if (dS < 0.2) {
+            vec3 glow = mix(vec3(1.0, 0.2, 0.0), vec3(1.0, 0.8, 0.0), dS*5.0);
+            col += glow * 0.03;
+        }
+        
+        if(d0 > 10.0 || abs(dS) < SURF_DIST) break;
+    }
+    
+    vec3 p = ro + rd * d0;
+    vec2 e = vec2(0.01, 0.0);
+    vec3 n = normalize(map(p) - vec3(map(p-e.xyy), map(p-e.yxy), map(p-e.yyx)));
+    
+    float diff = max(dot(n, normalize(vec3(1, 2, -1))), 0.0);
+    col += vec3(1.0, 0.4, 0.0) * diff * 0.2;
+    col *= 1.0 - length(uv) * 0.5;
+    
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Molten Lava', desc: '3D Raymarched Lava Lamp -Antigravity' });
+
+register('gyroid_ag', `
+#define MAX_STEPS 80
+#define MAX_DIST 40.0
+#define SURF_DIST 0.01
+
+mat2 rot(float a) { return mat2(cos(a), -sin(a), sin(a), cos(a)); }
+
+float map(vec3 p) {
+    p.z += u_time * 2.0;
+    p.xy *= rot(p.z * 0.1);
+    float scale = 3.0;
+    vec3 q = p * scale;
+    float gyroid = abs(dot(sin(q), cos(q.zxy))) / scale - 0.05;
+    return max(gyroid, -(length(p.xy) - 3.0));
+}
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+    vec3 ro = vec3(0.0, 0.0, -2.0);
+    vec3 rd = normalize(vec3(uv, 1.0));
+    float d0 = 0.0;
+    vec3 col = vec3(0.0);
+    for(int i=0; i<MAX_STEPS; i++) {
+        vec3 p = ro + rd * d0;
+        float dS = map(p);
+        d0 += dS;
+        
+        vec3 glow = 0.5 + 0.5 * cos(p.z * 0.5 + p.x * 0.5 + u_time + vec3(0.0, 2.0, 4.0));
+        col += glow * 0.005 / (0.01 + abs(dS));
+        
+        if(d0 > MAX_DIST || abs(dS) < SURF_DIST) break;
+    }
+    col *= exp(-0.08 * d0);
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Quantum Gyroid', desc: 'Glowing Raymarched Math -Antigravity' });
+
+register('wormhole_ag', `
+#define MAX_STEPS 60
+#define MAX_DIST 50.0
+
+mat2 rot(float a) { return mat2(cos(a), -sin(a), sin(a), cos(a)); }
+
+float map(vec3 p) { return -(length(p.xy) - 2.0 - sin(p.z * 0.5 + u_time)*0.5 - cos(p.x * 0.5)*0.5); }
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+    vec3 ro = vec3(sin(u_time)*0.5, cos(u_time*0.8)*0.5, u_time * 8.0);
+    vec3 rd = normalize(vec3(uv, 1.0));
+    rd.xy *= rot(sin(u_time * 0.3) * 0.5);
+    rd.xz *= rot(sin(u_time * 0.2) * 0.2);
+    
+    float d0 = 0.0;
+    vec3 col = vec3(0.0);
+    for(int i=0; i<MAX_STEPS; i++) {
+        vec3 p = ro + rd * d0;
+        float dS = map(p);
+        d0 += dS;
+        if (dS < 0.1) {
+            float a = atan(p.y, p.x);
+            vec2 id = floor(vec2(a * 8.0, p.z * 2.0));
+            vec3 neon = mix(vec3(0.1, 0.5, 1.0), vec3(0.9, 0.1, 0.8), hash(id));
+            float pulse = sin(p.z * 0.5 - u_time * 5.0) * 0.5 + 0.5;
+            col += neon * (step(0.9, fract(a * 8.0)) + step(0.9, fract(p.z * 2.0)) + pulse) * 0.02 / (1.0 + dS*dS*20.0);
+        }
+        if(d0 > MAX_DIST) break;
+    }
+    col *= exp(-0.03 * d0);
+    fragColor = vec4(col, 1.0);
+}`, { name: 'Wormhole Warp', desc: 'Hyperspace Tunnel -Antigravity' });
+
 export default ass;

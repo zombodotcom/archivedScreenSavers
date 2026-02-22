@@ -87,7 +87,7 @@ const ERAS = {
     year: '2024',
     desc: 'Modern WebGL creations',
     computer: 'modern-display',
-    effects: ['pipes', 'matrix', 'fireworks', 'warp', 'flow', 'rain', 'lava', 'aurora', 'neongrid', 'fractal', 'hyperspace', 'timetunnel', 'glplanet', 'plasma', 'euphoria', 'helios', 'fireflies', 'electropaint', 'frostfire']
+    effects: ['pipes_ag', 'matrix_ag', 'city_ag', 'fractal_ag', 'lava_ag', 'gyroid_ag', 'wormhole_ag', 'fireworks', 'warp', 'rain', 'aurora', 'neongrid', 'hyperspace', 'timetunnel', 'glplanet', 'plasma', 'euphoria', 'helios', 'fireflies', 'electropaint', 'frostfire']
   }
 };
 
@@ -292,7 +292,7 @@ class MiniPreview {
     const gl = this.gl;
     this.quadBuf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
 
     this.vao = gl.createVertexArray();
     gl.bindVertexArray(this.vao);
