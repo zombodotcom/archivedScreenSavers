@@ -1,0 +1,952 @@
+/* aSS - Archived Screen Savers */
+/* Main Stylesheet */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #050508;
+  --bg-pattern: radial-gradient(ellipse at 50% 0%, #1a1a2e 0%, #050508 70%);
+  --text: #fff;
+  --text-dim: #888;
+  --accent: #ff6b6b;
+  --glow-cyan: rgba(0, 255, 255, 0.4);
+  --glow-purple: rgba(138, 43, 226, 0.4);
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  background-image: var(--bg-pattern);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* CRT Scanline overlay for screens */
+.screen-content::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15) 0px,
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Screen glow effect */
+.screen-content::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: inherit;
+  filter: blur(8px);
+  opacity: 0.3;
+  z-index: -1;
+  border-radius: inherit;
+}
+
+/* Animated power LED */
+@keyframes led-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px currentColor; }
+  50% { opacity: 0.6; box-shadow: 0 0 3px currentColor; }
+}
+
+@keyframes screen-flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.8; }
+  94% { opacity: 1; }
+}
+
+/* ============================================
+   LANDING PAGE - Computer Gallery
+   ============================================ */
+
+.landing {
+  padding: 3rem 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.landing-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.logo {
+  font-size: 6rem;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ffd93d 25%, #6bff6b 50%, #6bd9ff 75%, #ff6bff 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+  animation: gradient-shift 8s ease infinite;
+  text-shadow: 0 0 60px rgba(255, 107, 107, 0.3);
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.tagline {
+  font-size: 1.25rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.computer-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 3rem;
+  justify-items: center;
+  perspective: 1000px;
+}
+
+/* ============================================
+   RETRO COMPUTER BASE STYLES
+   ============================================ */
+
+.computer {
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-decoration: none;
+  color: inherit;
+  transform-style: preserve-3d;
+}
+
+.computer:hover {
+  transform: scale(1.05) translateY(-10px);
+  z-index: 10;
+}
+
+.computer:hover .monitor,
+.computer:hover .computer-body {
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.6),
+    0 0 40px rgba(138, 43, 226, 0.15);
+}
+
+.computer:hover .screen-content {
+  filter: brightness(1.15) saturate(1.1);
+}
+
+.computer:hover .screen-content::after {
+  animation: screen-flicker 4s infinite;
+}
+
+.computer:hover .power-led,
+.computer:hover .led-green {
+  animation: led-pulse 1s infinite;
+}
+
+.computer-label {
+  text-align: center;
+  margin-top: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.computer:hover .computer-label {
+  transform: translateY(5px);
+}
+
+.computer:hover .computer-label h2 {
+  color: #fff;
+  text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+}
+
+.computer-label h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  transition: all 0.3s ease;
+}
+
+.computer-label .year {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.computer-label .count {
+  font-size: 0.75rem;
+  color: #555;
+  margin-top: 0.35rem;
+}
+
+/* ============================================
+   BEIGE PC (Windows 3.1/95/98/NT/2000)
+   ============================================ */
+
+.pc-beige {
+  --case-color: #d4c8a8;
+  --case-dark: #b8a888;
+  --case-shadow: #8a7a5a;
+  --bezel-color: #c8bc9c;
+}
+
+.pc-beige .monitor {
+  width: 280px;
+  height: 240px;
+  background: var(--case-color);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  box-shadow:
+    inset -4px -4px 0 var(--case-shadow),
+    inset 4px 4px 0 #e8dcc0,
+    0 10px 30px rgba(0,0,0,0.5);
+}
+
+.pc-beige .screen-bezel {
+  width: 100%;
+  height: 160px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 8px;
+  border: 3px solid var(--case-dark);
+}
+
+.pc-beige .screen-content {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.pc-beige .monitor-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding: 0 10px;
+}
+
+.pc-beige .monitor-brand {
+  font-size: 0.6rem;
+  color: var(--case-shadow);
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.pc-beige .monitor-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.pc-beige .monitor-btn {
+  width: 12px;
+  height: 12px;
+  background: var(--case-dark);
+  border-radius: 50%;
+  border: 2px solid var(--case-shadow);
+}
+
+.pc-beige .power-led {
+  width: 8px;
+  height: 8px;
+  background: #4a4;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #4a4, 0 0 2px #4a4 inset;
+  color: #4a4;
+}
+
+.pc-beige .screen-content {
+  position: relative;
+}
+
+/* ============================================
+   WINDOWS XP ERA PC (Silver/Black)
+   ============================================ */
+
+.pc-xp {
+  --case-color: #e8e8e8;
+  --case-dark: #c0c0c0;
+  --case-shadow: #888;
+  --accent: #003399;
+}
+
+.pc-xp .monitor {
+  width: 280px;
+  height: 230px;
+  background: linear-gradient(180deg, var(--case-color) 0%, var(--case-dark) 100%);
+  border-radius: 8px 8px 20px 20px;
+  padding: 15px;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.pc-xp .screen-bezel {
+  width: 100%;
+  height: 160px;
+  background: #0a0a0a;
+  border-radius: 4px;
+  padding: 6px;
+  border: 2px solid #333;
+}
+
+.pc-xp .screen-content {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.pc-xp .monitor-stand {
+  width: 80px;
+  height: 20px;
+  background: linear-gradient(180deg, var(--case-dark), #999);
+  margin: 8px auto 0;
+  border-radius: 0 0 10px 10px;
+}
+
+.pc-xp .monitor-brand {
+  text-align: center;
+  margin-top: 4px;
+  font-size: 0.5rem;
+  color: var(--accent);
+  font-weight: bold;
+}
+
+/* ============================================
+   VISTA/7 ERA (Glossy Black)
+   ============================================ */
+
+.pc-vista {
+  --case-color: #1a1a1a;
+  --case-dark: #0a0a0a;
+  --accent: #4a9eff;
+}
+
+.pc-vista .monitor {
+  width: 300px;
+  height: 200px;
+  background: linear-gradient(180deg, #2a2a2a 0%, var(--case-color) 50%, #0f0f0f 100%);
+  border-radius: 4px;
+  padding: 8px;
+  position: relative;
+  box-shadow:
+    0 0 0 2px #333,
+    0 10px 40px rgba(0,0,0,0.7);
+}
+
+.pc-vista .screen-bezel {
+  width: 100%;
+  height: 150px;
+  background: #000;
+  border-radius: 2px;
+  padding: 4px;
+}
+
+.pc-vista .screen-content {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  position: relative;
+}
+
+.pc-vista .monitor-chin {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pc-vista .vista-logo {
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #ff6b35, #f7c948, #7bc142, #4a9eff);
+  border-radius: 50%;
+  opacity: 0.8;
+}
+
+/* ============================================
+   CLASSIC MAC (Compact Macintosh)
+   ============================================ */
+
+.mac-classic {
+  --case-color: #e8e4d4;
+  --case-dark: #d0c8b0;
+  --case-shadow: #a8a088;
+}
+
+.mac-classic .computer-body {
+  width: 200px;
+  height: 260px;
+  background: linear-gradient(180deg, var(--case-color) 0%, var(--case-dark) 100%);
+  border-radius: 8px 8px 4px 4px;
+  padding: 15px;
+  position: relative;
+  box-shadow:
+    inset -3px -3px 0 var(--case-shadow),
+    inset 3px 3px 0 #f4f0e4,
+    0 10px 30px rgba(0,0,0,0.4);
+}
+
+.mac-classic .screen-area {
+  width: 100%;
+  height: 140px;
+  background: var(--case-dark);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.mac-classic .screen-content {
+  width: 100%;
+  height: 100%;
+  background: #1a1a1a;
+  border-radius: 4px;
+  border: 3px solid #0a0a0a;
+  overflow: hidden;
+  position: relative;
+}
+
+.mac-classic .floppy-slot {
+  width: 70%;
+  height: 6px;
+  background: #2a2a2a;
+  margin: 0 auto 10px;
+  border-radius: 1px;
+}
+
+.mac-classic .mac-logo {
+  width: 20px;
+  height: 24px;
+  margin: 0 auto;
+  background: linear-gradient(180deg,
+    #ff6b6b 0% 16.66%,
+    #ffa500 16.66% 33.33%,
+    #ffd93d 33.33% 50%,
+    #6bff6b 50% 66.66%,
+    #6bd9ff 66.66% 83.33%,
+    #c46bff 83.33% 100%
+  );
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0% 75%, 0% 25%);
+}
+
+.mac-classic .mac-vents {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.mac-classic .vent-line {
+  width: 30px;
+  height: 2px;
+  background: var(--case-shadow);
+  border-radius: 1px;
+}
+
+/* ============================================
+   IMAC G3 (Bondi Blue / Colors)
+   ============================================ */
+
+.imac-g3 {
+  --shell-color: #00a8e8;
+  --shell-dark: #0088c0;
+  --inner-color: #f0f0f0;
+}
+
+.imac-g3 .computer-body {
+  width: 220px;
+  height: 240px;
+  background: linear-gradient(135deg, var(--shell-color) 0%, var(--shell-dark) 100%);
+  border-radius: 20px 20px 40px 40px;
+  padding: 15px;
+  position: relative;
+  box-shadow:
+    inset 0 2px 20px rgba(255,255,255,0.3),
+    0 15px 40px rgba(0,0,0,0.5);
+}
+
+.imac-g3 .screen-housing {
+  width: 100%;
+  height: 160px;
+  background: var(--inner-color);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.imac-g3 .screen-content {
+  width: 100%;
+  height: 100%;
+  background: #0a0a0a;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.imac-g3 .imac-chin {
+  height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.imac-g3 .apple-logo {
+  width: 18px;
+  height: 22px;
+  background: #666;
+  clip-path: polygon(50% 0%, 65% 10%, 100% 35%, 95% 65%, 75% 100%, 50% 85%, 25% 100%, 5% 65%, 0% 35%, 35% 10%);
+}
+
+.imac-g3 .cd-slot {
+  width: 60px;
+  height: 3px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 2px;
+}
+
+/* ============================================
+   MODERN MAC (Aluminum)
+   ============================================ */
+
+.mac-modern {
+  --case-color: #e0e0e0;
+  --case-dark: #c0c0c0;
+}
+
+.mac-modern .monitor {
+  width: 300px;
+  height: 190px;
+  background: linear-gradient(180deg, #1a1a1a, #0a0a0a);
+  border-radius: 4px;
+  padding: 6px;
+  position: relative;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+
+.mac-modern .screen-content {
+  width: 100%;
+  height: 150px;
+  background: #000;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.mac-modern .monitor-chin {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mac-modern .apple-logo {
+  width: 12px;
+  height: 14px;
+  background: #444;
+  clip-path: polygon(50% 0%, 65% 10%, 100% 35%, 95% 65%, 75% 100%, 50% 85%, 25% 100%, 5% 65%, 0% 35%, 35% 10%);
+}
+
+.mac-modern .stand {
+  width: 80px;
+  height: 60px;
+  background: linear-gradient(180deg, var(--case-color), var(--case-dark));
+  margin: 0 auto;
+  clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+}
+
+/* ============================================
+   LINUX WORKSTATION
+   ============================================ */
+
+.linux-workstation {
+  --case-color: #2a2a2a;
+}
+
+.linux-workstation .monitor {
+  width: 280px;
+  height: 210px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  padding: 10px;
+  border: 2px solid #333;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+.linux-workstation .screen-bezel {
+  width: 100%;
+  height: 155px;
+  background: #0a0a0a;
+  border-radius: 4px;
+  padding: 5px;
+  border: 1px solid #222;
+}
+
+.linux-workstation .screen-content {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.linux-workstation .monitor-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding: 0 5px;
+}
+
+.linux-workstation .tux-icon {
+  font-size: 1.2rem;
+}
+
+.linux-workstation .monitor-leds {
+  display: flex;
+  gap: 5px;
+}
+
+.linux-workstation .led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.linux-workstation .led-green { background: #4a4; box-shadow: 0 0 4px #4a4; }
+.linux-workstation .led-orange { background: #a84; }
+
+/* ============================================
+   ORIGINALS (Modern Display)
+   ============================================ */
+
+.modern-display .monitor {
+  width: 300px;
+  height: 180px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f1a 100%);
+  border-radius: 8px;
+  padding: 8px;
+  position: relative;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.1),
+    0 0 30px rgba(138, 43, 226, 0.2),
+    0 15px 40px rgba(0,0,0,0.6);
+}
+
+.modern-display .screen-content {
+  width: 100%;
+  height: 140px;
+  background: #000;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    inset 0 0 30px rgba(138, 43, 226, 0.1);
+}
+
+.modern-display .stand {
+  width: 60px;
+  height: 20px;
+  background: linear-gradient(180deg, #2a2a3a, #1a1a2a);
+  margin: 8px auto 0;
+  border-radius: 0 0 20px 20px;
+}
+
+/* ============================================
+   SCREEN CONTENT CANVAS
+   ============================================ */
+
+.screen-content canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ============================================
+   MUSEUM PAGE
+   ============================================ */
+
+.museum {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: 100vh;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, #14141e 0%, #0a0a12 100%);
+  border-right: 1px solid #2a2a3a;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.sidebar h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+  background: linear-gradient(135deg, #ff6b6b, #ffd93d, #6bff6b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sidebar .era-name {
+  color: var(--text-dim);
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #2a2a3a;
+}
+
+.back-link {
+  display: inline-block;
+  color: var(--text-dim);
+  text-decoration: none;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.back-link:hover {
+  color: var(--text);
+  transform: translateX(-3px);
+}
+
+.effect-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.effect-item {
+  padding: 0.875rem 1rem;
+  background: rgba(26, 26, 37, 0.8);
+  border: 1px solid #2a2a3a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.effect-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.effect-item:hover {
+  background: rgba(34, 34, 48, 0.9);
+  border-color: #3a3a4a;
+  transform: translateX(3px);
+}
+
+.effect-item:hover::before {
+  background: linear-gradient(180deg, #6bd9ff, #ff6bff);
+}
+
+.effect-item.active {
+  background: rgba(42, 42, 64, 0.9);
+  border-color: #5a5a8a;
+  box-shadow: 0 0 20px rgba(138, 43, 226, 0.15);
+}
+
+.effect-item.active::before {
+  background: linear-gradient(180deg, #6bff6b, #6bd9ff);
+}
+
+.effect-item h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.effect-item p {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.controls button {
+  flex: 1;
+  padding: 0.625rem 0.75rem;
+  background: linear-gradient(180deg, #2a2a3a, #1a1a2a);
+  border: 1px solid #3a3a4a;
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.controls button:hover {
+  background: linear-gradient(180deg, #3a3a4a, #2a2a3a);
+  border-color: #5a5a6a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Settings Panel */
+.settings-panel {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #2a2a3a;
+  display: none;
+}
+
+.settings-panel h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.setting-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.setting-row label {
+  flex: 1;
+  font-size: 0.8rem;
+  color: #aaa;
+  min-width: 100px;
+}
+
+.setting-row input[type="range"] {
+  flex: 2;
+  min-width: 100px;
+  height: 4px;
+  background: #2a2a3a;
+  border-radius: 2px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.setting-row input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(135deg, #6bd9ff, #ff6bff);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(107, 217, 255, 0.4);
+}
+
+.setting-row input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(135deg, #6bd9ff, #ff6bff);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 8px rgba(107, 217, 255, 0.4);
+}
+
+.setting-row input[type="color"] {
+  width: 32px;
+  height: 24px;
+  border: 1px solid #3a3a4a;
+  border-radius: 4px;
+  background: #1a1a2a;
+  cursor: pointer;
+  padding: 0;
+}
+
+.setting-value {
+  font-size: 0.75rem;
+  color: #6bd9ff;
+  min-width: 40px;
+  text-align: right;
+  font-family: monospace;
+}
+
+.reset-btn {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background: transparent;
+  border: 1px solid #3a3a4a;
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.reset-btn:hover {
+  background: rgba(255, 107, 107, 0.1);
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.preview {
+  position: relative;
+  background: #000;
+}
+
+.preview canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.status {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .computer-gallery {
+    grid-template-columns: 1fr;
+  }
+
+  .museum {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  .sidebar {
+    order: 2;
+    max-height: 40vh;
+  }
+
+  .preview {
+    order: 1;
+  }
+}

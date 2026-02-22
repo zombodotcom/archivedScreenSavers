@@ -1,0 +1,2594 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SCRN</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0a0a0a;
+      --fg: #e0e0e0;
+      --accent: #00ff88;
+      --dim: #333;
+      --panel-bg: rgba(10, 10, 10, 0.92);
+      --font-mono: 'IBM Plex Mono', monospace;
+      --font-display: 'Space Mono', monospace;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-mono);
+      cursor: none;
+    }
+
+    body.ui-active {
+      cursor: default;
+    }
+
+    canvas#gl {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* ── Fade overlay for transitions ── */
+    #fade-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 10;
+      transition: opacity 0.6s ease;
+    }
+
+    #fade-overlay.active {
+      opacity: 1;
+    }
+
+    /* ── UI Panel ── */
+    #ui {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      pointer-events: none;
+    }
+
+    #ui.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+
+    #panel {
+      max-width: 860px;
+      margin: 0 auto 24px;
+      background: var(--panel-bg);
+      border: 1px solid var(--dim);
+      border-radius: 2px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 16px 20px;
+    }
+
+    #panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--dim);
+    }
+
+    #panel-title {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    #panel-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .ctrl-btn {
+      background: none;
+      border: 1px solid var(--dim);
+      color: var(--fg);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      cursor: pointer;
+      border-radius: 1px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .ctrl-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .ctrl-btn.active {
+      border-color: var(--accent);
+      color: var(--bg);
+      background: var(--accent);
+    }
+
+    #effect-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 6px;
+    }
+
+    .effect-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--fg);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 8px 10px;
+      cursor: pointer;
+      text-align: left;
+      border-radius: 1px;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .effect-btn:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: var(--dim);
+    }
+
+    .effect-btn.selected {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(0, 255, 136, 0.06);
+    }
+
+    .effect-btn .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--dim);
+      flex-shrink: 0;
+    }
+
+    .effect-btn.selected .dot {
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent);
+    }
+
+    #status-bar {
+      position: fixed;
+      top: 12px;
+      right: 16px;
+      z-index: 100;
+      font-size: 10px;
+      color: var(--dim);
+      font-family: var(--font-mono);
+      letter-spacing: 1px;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    #ui.visible~#status-bar,
+    #status-bar.visible {
+      opacity: 1;
+    }
+
+    /* ── Hint ── */
+    #hint {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      font-size: 10px;
+      color: var(--dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0;
+      transition: opacity 2s ease;
+      pointer-events: none;
+    }
+
+    #hint.visible {
+      opacity: 0.5;
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="gl"></canvas>
+  <div id="fade-overlay"></div>
+
+  <div id="ui">
+    <div id="panel">
+      <div id="panel-header">
+        <div id="panel-title">SCRN</div>
+        <div id="panel-controls">
+          <button class="ctrl-btn" id="btn-shuffle" title="Random cycle">shuffle</button>
+          <button class="ctrl-btn" id="btn-fullscreen" title="Toggle fullscreen">fullscreen</button>
+        </div>
+      </div>
+      <div id="effect-list"></div>
+    </div>
+  </div>
+
+  <div id="status-bar"></div>
+  <div id="hint">move mouse to show menu</div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // SCRN — Screensaver Engine
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    const SCRN = (() => {
+      // ── State ──
+      const state = {
+        gl: null,
+        canvas: null,
+        effects: new Map(),
+        currentEffect: null,
+        currentId: null,
+        running: false,
+        time: 0,
+        lastFrame: 0,
+        shuffle: false,
+        shuffleInterval: 30, // seconds per effect in shuffle mode
+        shuffleTimer: 0,
+        uiVisible: false,
+        uiTimeout: null,
+        cursorTimeout: null,
+        width: 0,
+        height: 0,
+        dpr: 1,
+        mouse: { x: 0, y: 0, lastMove: 0 },
+        // shared GL resources for shader effects
+        quadVAO: null,
+        quadBuffer: null,
+      };
+
+      // ── GL Init ──
+      function initGL() {
+        state.canvas = document.getElementById('gl');
+        state.gl = state.canvas.getContext('webgl2', {
+          alpha: false,
+          antialias: false,
+          depth: true,
+          stencil: false,
+          powerPreference: 'high-performance',
+        });
+
+        if (!state.gl) {
+          state.gl = state.canvas.getContext('webgl', {
+            alpha: false, antialias: false, depth: true,
+            powerPreference: 'high-performance',
+          });
+          console.warn('SCRN: Fell back to WebGL1');
+        }
+
+        if (!state.gl) {
+          document.body.innerHTML = '<div style="color:#f55;padding:40px;font-family:monospace">WebGL not supported</div>';
+          return false;
+        }
+
+        // Create fullscreen quad
+        const gl = state.gl;
+        const verts = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
+        state.quadBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, state.quadBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
+
+        if (gl.createVertexArray) {
+          state.quadVAO = gl.createVertexArray();
+          gl.bindVertexArray(state.quadVAO);
+          gl.enableVertexAttribArray(0);
+          gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+          gl.bindVertexArray(null);
+        }
+
+        resize();
+        return true;
+      }
+
+      function resize() {
+        state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+        state.width = window.innerWidth;
+        state.height = window.innerHeight;
+        state.canvas.width = state.width * state.dpr;
+        state.canvas.height = state.height * state.dpr;
+        state.gl.viewport(0, 0, state.canvas.width, state.canvas.height);
+      }
+
+      // ── Shader Helpers ──
+      function compileShader(src, type) {
+        const gl = state.gl;
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+          console.error('SCRN shader error:', gl.getShaderInfoLog(s));
+          gl.deleteShader(s);
+          return null;
+        }
+        return s;
+      }
+
+      function createProgram(vsrc, fsrc) {
+        const gl = state.gl;
+        const vs = compileShader(vsrc, gl.VERTEX_SHADER);
+        const fs = compileShader(fsrc, gl.FRAGMENT_SHADER);
+        if (!vs || !fs) return null;
+        const p = gl.createProgram();
+        gl.attachShader(p, vs);
+        gl.attachShader(p, fs);
+        gl.bindAttribLocation(p, 0, 'a_pos');
+        gl.linkProgram(p);
+        if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+          console.error('SCRN link error:', gl.getProgramInfoLog(p));
+          return null;
+        }
+        // Cleanup individual shaders
+        gl.deleteShader(vs);
+        gl.deleteShader(fs);
+        return p;
+      }
+
+      function getUniforms(program, names) {
+        const gl = state.gl;
+        const u = {};
+        for (const n of names) u[n] = gl.getUniformLocation(program, n);
+        return u;
+      }
+
+      // Draw fullscreen quad
+      function drawQuad() {
+        const gl = state.gl;
+        if (state.quadVAO) {
+          gl.bindVertexArray(state.quadVAO);
+        } else {
+          gl.bindBuffer(gl.ARRAY_BUFFER, state.quadBuffer);
+          gl.enableVertexAttribArray(0);
+          gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+        }
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        if (state.quadVAO) gl.bindVertexArray(null);
+      }
+
+      // ── Effect Registration ──
+      // Each effect is an object: { id, name, init(ctx), draw(ctx, dt), destroy(ctx)? }
+      // ctx = { gl, canvas, width, height, dpr, time, mouse, compileShader, createProgram, getUniforms, drawQuad }
+      function register(effect) {
+        state.effects.set(effect.id, effect);
+      }
+
+      function getContext() {
+        return {
+          gl: state.gl,
+          canvas: state.canvas,
+          width: state.canvas.width,
+          height: state.canvas.height,
+          cssWidth: state.width,
+          cssHeight: state.height,
+          dpr: state.dpr,
+          time: state.time,
+          mouse: state.mouse,
+          // helpers
+          compileShader,
+          createProgram,
+          getUniforms,
+          drawQuad,
+        };
+      }
+
+      // ── Effect Switching ──
+      async function switchEffect(id) {
+        const effect = state.effects.get(id);
+        if (!effect) return;
+
+        const overlay = document.getElementById('fade-overlay');
+        overlay.classList.add('active');
+
+        await sleep(500);
+
+        // Teardown old
+        if (state.currentEffect && state.currentEffect.destroy) {
+          try { state.currentEffect.destroy(getContext()); } catch (e) { console.error(e); }
+        }
+
+        // Init new
+        state.currentId = id;
+        state.currentEffect = effect;
+        state.time = 0;
+
+        const gl = state.gl;
+        gl.clearColor(0, 0, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        try {
+          effect.init(getContext());
+        } catch (e) {
+          console.error(`SCRN: Failed to init "${id}":`, e);
+        }
+
+        // Update UI
+        document.querySelectorAll('.effect-btn').forEach(b => {
+          b.classList.toggle('selected', b.dataset.id === id);
+        });
+        updateStatus();
+
+        await sleep(100);
+        overlay.classList.remove('active');
+
+        state.shuffleTimer = 0;
+      }
+
+      // ── Render Loop ──
+      function frame(now) {
+        if (!state.running) return;
+        requestAnimationFrame(frame);
+
+        const dt = Math.min((now - state.lastFrame) / 1000, 0.1); // cap at 100ms
+        state.lastFrame = now;
+        state.time += dt;
+
+        // Shuffle timer
+        if (state.shuffle) {
+          state.shuffleTimer += dt;
+          if (state.shuffleTimer >= state.shuffleInterval) {
+            nextRandom();
+            return; // will restart after switch
+          }
+        }
+
+        // Cursor auto-hide
+        const cursorAge = now - state.mouse.lastMove;
+        if (cursorAge > 2500 && state.uiVisible) {
+          hideUI();
+        }
+
+        // Draw
+        if (state.currentEffect) {
+          const ctx = getContext();
+          ctx.time = state.time;
+          try {
+            state.currentEffect.draw(ctx, dt);
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      }
+
+      function start() {
+        state.running = true;
+        state.lastFrame = performance.now();
+        requestAnimationFrame(frame);
+      }
+
+      function stop() {
+        state.running = false;
+      }
+
+      // ── Shuffle ──
+      function nextRandom() {
+        const ids = [...state.effects.keys()];
+        let next;
+        do {
+          next = ids[Math.floor(Math.random() * ids.length)];
+        } while (next === state.currentId && ids.length > 1);
+        switchEffect(next);
+      }
+
+      // ── UI ──
+      function buildUI() {
+        const list = document.getElementById('effect-list');
+        list.innerHTML = '';
+
+        for (const [id, effect] of state.effects) {
+          const btn = document.createElement('button');
+          btn.className = 'effect-btn';
+          btn.dataset.id = id;
+          btn.innerHTML = `<span class="dot"></span>${effect.name}`;
+          btn.addEventListener('click', () => switchEffect(id));
+          list.appendChild(btn);
+        }
+
+        // Shuffle button
+        document.getElementById('btn-shuffle').addEventListener('click', () => {
+          state.shuffle = !state.shuffle;
+          document.getElementById('btn-shuffle').classList.toggle('active', state.shuffle);
+          if (state.shuffle) nextRandom();
+        });
+
+        // Fullscreen button
+        document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
+      }
+
+      function showUI() {
+        state.uiVisible = true;
+        document.getElementById('ui').classList.add('visible');
+        document.getElementById('hint').classList.remove('visible');
+        document.body.classList.add('ui-active');
+      }
+
+      function hideUI() {
+        state.uiVisible = false;
+        document.getElementById('ui').classList.remove('visible');
+        document.body.classList.remove('ui-active');
+      }
+
+      function updateStatus() {
+        const el = document.getElementById('status-bar');
+        const e = state.currentEffect;
+        if (e) el.textContent = e.name;
+      }
+
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => { });
+        } else {
+          document.exitFullscreen();
+        }
+      }
+
+      // ── Events ──
+      function initEvents() {
+        window.addEventListener('resize', () => {
+          resize();
+          if (state.currentEffect && state.currentEffect.resize) {
+            state.currentEffect.resize(getContext());
+          }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+          state.mouse.x = e.clientX / state.width;
+          state.mouse.y = 1.0 - (e.clientY / state.height);
+          state.mouse.lastMove = performance.now();
+          showUI();
+        });
+
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+          if (e.key === 'Escape' && state.uiVisible) hideUI();
+          if (e.key === ' ') { e.preventDefault(); nextRandom(); }
+          if (e.key === 's' || e.key === 'S') {
+            state.shuffle = !state.shuffle;
+            document.getElementById('btn-shuffle').classList.toggle('active', state.shuffle);
+            if (state.shuffle) nextRandom();
+          }
+          state.mouse.lastMove = performance.now();
+          showUI();
+        });
+
+        // Show hint after 3 seconds
+        setTimeout(() => {
+          document.getElementById('hint').classList.add('visible');
+        }, 3000);
+      }
+
+      // ── Util ──
+      function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+      // ── Public API ──
+      return {
+        state,
+        register,
+        switchEffect,
+        start,
+        stop,
+        initGL,
+        buildUI,
+        initEvents,
+        getContext,
+        // Expose helpers so effects defined externally can use them
+        createProgram,
+        getUniforms,
+        drawQuad,
+      };
+    })();
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // EFFECTS
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // Each effect: { id, name, init(ctx), draw(ctx, dt), destroy(ctx)? }
+    // For shader effects, the pattern is: compile a program in init, set uniforms
+    // and drawQuad in draw.
+
+    // Shared vertex shader for fullscreen quad effects
+    const FULLSCREEN_VS = `#version 300 es
+in vec2 a_pos;
+out vec2 v_uv;
+void main() {
+  v_uv = a_pos * 0.5 + 0.5;
+  gl_Position = vec4(a_pos, 0.0, 1.0);
+}`;
+
+    // Fallback for WebGL1
+    const FULLSCREEN_VS1 = `
+attribute vec2 a_pos;
+varying vec2 v_uv;
+void main() {
+  v_uv = a_pos * 0.5 + 0.5;
+  gl_Position = vec4(a_pos, 0.0, 1.0);
+}`;
+
+    function isWebGL2() {
+      return SCRN.state.gl instanceof WebGL2RenderingContext;
+    }
+
+    function vs() { return isWebGL2() ? FULLSCREEN_VS : FULLSCREEN_VS1; }
+
+    // Helper: create a standard fullscreen shader effect
+    function shaderEffect(id, name, fragmentSrc) {
+      let program, uniforms;
+      return {
+        id, name,
+        init(ctx) {
+          program = ctx.createProgram(vs(), fragmentSrc);
+          uniforms = ctx.getUniforms(program, ['u_time', 'u_resolution', 'u_mouse']);
+          ctx.gl.disable(ctx.gl.DEPTH_TEST);
+        },
+        draw(ctx, dt) {
+          const gl = ctx.gl;
+          gl.useProgram(program);
+          gl.uniform1f(uniforms.u_time, ctx.time);
+          gl.uniform2f(uniforms.u_resolution, ctx.width, ctx.height);
+          gl.uniform2f(uniforms.u_mouse, ctx.mouse.x, ctx.mouse.y);
+          ctx.drawQuad();
+        },
+        destroy(ctx) {
+          if (program) ctx.gl.deleteProgram(program);
+          program = null;
+        }
+      };
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 1. STARFIELD
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('starfield', 'Starfield', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+  float t = u_time * 0.4;
+
+  vec3 col = vec3(0.0);
+
+  for (int layer = 0; layer < 4; layer++) {
+    float depth = 1.0 + float(layer) * 0.8;
+    float speed = 0.8 / depth;
+    float scale = 60.0 * depth;
+
+    vec2 st = uv * scale;
+    st.y += t * speed * scale * 0.3;
+
+    vec2 ipos = floor(st);
+    vec2 fpos = fract(st);
+
+    for (int j = -1; j <= 1; j++) {
+      for (int i = -1; i <= 1; i++) {
+        vec2 neighbor = vec2(float(i), float(j));
+        vec2 id = ipos + neighbor;
+        float h = hash(id);
+        float h2 = hash(id + 100.0);
+
+        vec2 starPos = vec2(h, h2);
+        float dist = length(fpos - neighbor - starPos);
+
+        float brightness = h * 0.5 + 0.5;
+        float size = (0.02 + h2 * 0.03) / depth;
+        float star = smoothstep(size, 0.0, dist);
+
+        // Twinkle
+        float twinkle = sin(u_time * (2.0 + h * 4.0) + h * 6.28) * 0.3 + 0.7;
+        star *= twinkle * brightness;
+
+        // Color temperature
+        vec3 starColor = mix(vec3(0.7, 0.8, 1.0), vec3(1.0, 0.95, 0.8), h);
+        col += star * starColor / depth;
+      }
+    }
+  }
+
+  // Subtle blue nebula
+  float nebula = smoothstep(0.4, 0.0, length(uv - vec2(0.3, 0.2)));
+  col += nebula * vec3(0.02, 0.01, 0.06);
+
+  // Vignette
+  float vig = 1.0 - 0.4 * length(uv);
+  col *= vig;
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 2. PLASMA
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('plasma', 'Plasma', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time * 0.5;
+
+  float v1 = sin(uv.x * 10.0 + t);
+  float v2 = sin(10.0 * (uv.x * sin(t * 0.5) + uv.y * cos(t * 0.3)) + t);
+  float v3 = sin(sqrt(100.0 * ((uv.x - 0.5) * (uv.x - 0.5) + (uv.y - 0.5) * (uv.y - 0.5)) + 1.0) + t);
+  float v4 = sin(sqrt(50.0 * uv.x * uv.x + 50.0 * uv.y * uv.y) + t * 1.3);
+
+  float v = (v1 + v2 + v3 + v4) * 0.25;
+
+  vec3 col;
+  col.r = sin(v * 3.14159 + t * 0.3) * 0.5 + 0.5;
+  col.g = sin(v * 3.14159 + 2.094 + t * 0.2) * 0.5 + 0.5;
+  col.b = sin(v * 3.14159 + 4.188 + t * 0.4) * 0.5 + 0.5;
+
+  // Boost saturation
+  col = pow(col, vec3(0.8));
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 3. MATRIX RAIN
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('matrix', 'Matrix', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(float n) { return fract(sin(n) * 43758.5453); }
+float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+float char(vec2 p, float n) {
+  // Fake character grid - creates a pseudo-glyph pattern
+  vec2 cp = fract(p) * vec2(4.0, 5.0);
+  vec2 ci = floor(cp);
+  float idx = ci.x + ci.y * 4.0 + n;
+  return step(0.5, hash(idx));
+}
+
+void main() {
+  float cols = floor(u_resolution.x / (12.0));
+  float rows = floor(u_resolution.y / (16.0));
+
+  vec2 cell = vec2(cols, rows);
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec2 grid = uv * cell;
+  vec2 ipos = floor(grid);
+  vec2 fpos = fract(grid);
+
+  float colId = ipos.x;
+  float speed = 2.0 + hash(colId * 13.7) * 6.0;
+  float offset = hash(colId * 7.3) * 100.0;
+
+  float row = ipos.y;
+  float t = u_time * speed + offset;
+  float headY = mod(t, cell.y + 20.0);
+
+  float dist = headY - (cell.y - row);
+
+  // Character changes
+  float charSeed = hash2(vec2(colId, floor(row + t * 0.5))) * 100.0;
+  float ch = char(fpos, charSeed);
+
+  float brightness = 0.0;
+  if (dist > 0.0 && dist < 25.0) {
+    brightness = (1.0 - dist / 25.0);
+    brightness *= brightness;
+  }
+  if (dist >= 0.0 && dist < 1.0) {
+    brightness = 1.0; // head is bright white-green
+  }
+
+  brightness *= ch;
+
+  vec3 col = vec3(0.1, 1.0, 0.3) * brightness;
+  // Head glow
+  if (dist >= 0.0 && dist < 1.5) {
+    col = mix(vec3(0.8, 1.0, 0.9), col, smoothstep(0.0, 1.5, dist));
+    col *= ch;
+  }
+
+  // Slight scanline
+  col *= 0.9 + 0.1 * sin(gl_FragCoord.y * 3.14159);
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 4. MYSTIFY
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('mystify', 'Mystify', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(float n) { return fract(sin(n) * 43758.5453); }
+
+vec2 vertex(float id, float group, float t) {
+  float speed1 = 0.3 + hash(id * 17.0 + group * 31.0) * 0.4;
+  float speed2 = 0.2 + hash(id * 23.0 + group * 41.0) * 0.3;
+  float phase1 = hash(id * 37.0 + group * 53.0) * 6.28;
+  float phase2 = hash(id * 43.0 + group * 59.0) * 6.28;
+  return vec2(
+    sin(t * speed1 + phase1) * 0.4 + 0.5,
+    sin(t * speed2 + phase2) * 0.4 + 0.5
+  );
+}
+
+float lineSegment(vec2 p, vec2 a, vec2 b) {
+  vec2 pa = p - a, ba = b - a;
+  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h);
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float aspect = u_resolution.x / u_resolution.y;
+  uv.x *= aspect;
+
+  vec3 col = vec3(0.0);
+  float t = u_time;
+
+  // Two groups of connected polygons
+  for (float g = 0.0; g < 2.0; g++) {
+    vec3 groupColor = g < 0.5
+      ? vec3(0.2, 0.5, 1.0)
+      : vec3(1.0, 0.3, 0.5);
+
+    // Trail effect: draw multiple time offsets
+    for (float trail = 0.0; trail < 8.0; trail++) {
+      float tt = t - trail * 0.06;
+      float alpha = (8.0 - trail) / 8.0;
+      alpha *= alpha;
+
+      // 4-vertex polygon
+      for (float i = 0.0; i < 4.0; i++) {
+        vec2 a = vertex(i, g, tt);
+        vec2 b = vertex(mod(i + 1.0, 4.0), g, tt);
+        a.x *= aspect;
+        b.x *= aspect;
+
+        float d = lineSegment(uv, a, b);
+        float line = smoothstep(0.003, 0.0, d);
+        col += line * groupColor * alpha * 0.5;
+      }
+    }
+  }
+
+  col = min(col, vec3(1.0));
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 5. FIREWORKS
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('fireworks', 'Fireworks', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(float n) { return fract(sin(n) * 43758.5453); }
+float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+  vec3 col = vec3(0.0);
+
+  for (float i = 0.0; i < 8.0; i++) {
+    float birthTime = floor(u_time * 0.3 + i * 0.37) * (1.0 / 0.3);
+    birthTime += i * 1.23;
+    float age = u_time - birthTime;
+    float cycleTime = 3.5 + hash(i * 7.0) * 2.0;
+    age = mod(age, cycleTime);
+
+    // Launch position
+    float bx = hash(birthTime * 13.0 + i) * 1.4 - 0.7;
+    float by = hash(birthTime * 17.0 + i) * 0.4 + 0.1;
+    vec2 center = vec2(bx, by);
+
+    // Explosion
+    float explodeTime = 0.8;
+    if (age > explodeTime) {
+      float ea = age - explodeTime;
+      float fade = exp(-ea * 1.2);
+      float gravity = ea * ea * 0.15;
+
+      // Particles
+      float numParticles = 40.0;
+      for (float p = 0.0; p < 40.0; p++) {
+        float angle = hash(p * 3.0 + i * 100.0) * 6.28318;
+        float speed = hash(p * 7.0 + i * 200.0) * 0.3 + 0.05;
+        speed *= (1.0 - ea * 0.2); // drag
+
+        vec2 ppos = center + vec2(cos(angle), sin(angle)) * speed * ea;
+        ppos.y -= gravity;
+
+        float dist = length(uv - ppos);
+        float spark = smoothstep(0.008, 0.0, dist) * fade;
+
+        // Color per firework
+        vec3 fc = vec3(
+          0.5 + 0.5 * sin(i * 2.3),
+          0.5 + 0.5 * sin(i * 3.7 + 2.0),
+          0.5 + 0.5 * sin(i * 5.1 + 4.0)
+        );
+
+        col += spark * fc * 2.0;
+      }
+    } else {
+      // Rising trail
+      float riseProgress = age / explodeTime;
+      vec2 launchPos = vec2(bx, -0.6);
+      vec2 trailPos = mix(launchPos, center, riseProgress);
+
+      float dist = length(uv - trailPos);
+      float spark = smoothstep(0.006, 0.0, dist);
+      col += spark * vec3(1.0, 0.9, 0.6);
+    }
+  }
+
+  // Dim overall for depth
+  col *= 0.8;
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 6. WARP TUNNEL
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('warp', 'Warp', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+  float t = u_time * 0.8;
+
+  float angle = atan(uv.y, uv.x);
+  float dist = length(uv);
+
+  // Tunnel coordinates
+  float tunnel_z = 1.0 / (dist + 0.01) + t * 2.0;
+  float tunnel_a = angle / 3.14159 * 4.0;
+
+  // Grid pattern
+  float pattern = 0.0;
+  float g1 = abs(fract(tunnel_z * 0.5) - 0.5) * 2.0;
+  float g2 = abs(fract(tunnel_a * 0.5) - 0.5) * 2.0;
+  pattern = smoothstep(0.4, 0.45, g1) + smoothstep(0.4, 0.45, g2);
+  pattern = min(pattern, 1.0);
+
+  // Color
+  vec3 col = vec3(0.0);
+  float glow = 0.05 / (dist + 0.05);
+
+  vec3 gridColor = mix(
+    vec3(0.0, 0.4, 1.0),
+    vec3(0.0, 1.0, 0.6),
+    sin(t * 0.3) * 0.5 + 0.5
+  );
+
+  col = pattern * gridColor * glow * 0.8;
+
+  // Center glow
+  col += vec3(0.6, 0.8, 1.0) * 0.02 / (dist * dist + 0.01);
+
+  // Vignette
+  col *= smoothstep(0.0, 0.3, dist);
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 7. FLOW FIELD
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('flow', 'Flow Field', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 5; i++) {
+    v += a * noise(p);
+    p *= 2.0;
+    a *= 0.5;
+  }
+  return v;
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time * 0.15;
+
+  vec2 p = uv * 3.0;
+
+  // Domain warping
+  float n1 = fbm(p + vec2(t, t * 0.7));
+  float n2 = fbm(p + vec2(n1 * 2.0, t * 0.5));
+  float n3 = fbm(p + vec2(n2 * 1.5, n1 * 1.5) + t * 0.3);
+
+  vec3 col1 = vec3(0.05, 0.1, 0.25);
+  vec3 col2 = vec3(0.1, 0.3, 0.5);
+  vec3 col3 = vec3(0.4, 0.15, 0.3);
+  vec3 col4 = vec3(0.8, 0.4, 0.2);
+
+  vec3 col = mix(col1, col2, n1);
+  col = mix(col, col3, n2 * 0.8);
+  col = mix(col, col4, n3 * 0.5);
+
+  // Add subtle highlights
+  col += vec3(0.8, 0.6, 0.3) * smoothstep(0.6, 0.8, n3) * 0.3;
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 8. RAIN
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('rain', 'Rain', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float aspect = u_resolution.x / u_resolution.y;
+  vec3 col = vec3(0.01, 0.01, 0.03); // dark blue-black
+
+  float t = u_time;
+
+  // Multiple rain layers
+  for (float layer = 0.0; layer < 3.0; layer++) {
+    float scale = 30.0 + layer * 20.0;
+    float speed = 3.0 + layer * 2.0;
+    float alpha = 1.0 - layer * 0.3;
+    float width = 0.015 - layer * 0.003;
+
+    vec2 st = vec2(uv.x * aspect * scale, uv.y * scale);
+    st.y += t * speed;
+
+    float colId = floor(st.x);
+    float rowFract = fract(st.y);
+
+    float h = hash(vec2(colId, floor(st.y)));
+    float h2 = hash(vec2(colId + 100.0, floor(st.y)));
+
+    // Only some cells have drops
+    if (h > 0.7) {
+      float dropX = fract(st.x);
+      float xDist = abs(dropX - 0.5);
+
+      // Elongated drop
+      float dropLen = 0.3 + h2 * 0.5;
+      float yy = rowFract;
+
+      if (yy < dropLen && xDist < width) {
+        float brightness = (1.0 - yy / dropLen) * alpha;
+        brightness *= smoothstep(width, 0.0, xDist);
+        col += vec3(0.4, 0.5, 0.7) * brightness * 0.4;
+      }
+    }
+  }
+
+  // Occasional lightning flash
+  float flash = step(0.998, hash(vec2(floor(t * 2.0), 0.0)));
+  flash *= (sin(t * 50.0) * 0.5 + 0.5);
+  col += vec3(0.15, 0.15, 0.2) * flash;
+
+  // Vignette
+  vec2 vc = uv - 0.5;
+  col *= 1.0 - 0.5 * dot(vc, vc);
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 9. LAVA LAMP
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('lava', 'Lava Lamp', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i), hash(i + vec2(1,0)), f.x),
+    mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
+    f.y
+  );
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+  float t = u_time * 0.3;
+
+  // Metaballs
+  float field = 0.0;
+  for (float i = 0.0; i < 6.0; i++) {
+    vec2 center = vec2(
+      sin(t * (0.3 + i * 0.1) + i * 2.0) * 0.3,
+      sin(t * (0.2 + i * 0.15) + i * 1.5) * 0.5
+    );
+    float r = 0.08 + 0.04 * sin(t + i);
+    float d = length(uv - center);
+    field += r / d;
+  }
+
+  // Threshold to create blob shapes
+  float blob = smoothstep(1.2, 1.8, field);
+
+  // Colors
+  vec3 bgColor = vec3(0.02, 0.0, 0.05);
+  vec3 blobColor1 = vec3(0.9, 0.2, 0.1);
+  vec3 blobColor2 = vec3(1.0, 0.6, 0.0);
+
+  float colorMix = noise(uv * 3.0 + t * 0.5);
+  vec3 blobColor = mix(blobColor1, blobColor2, colorMix);
+
+  // Glow around blobs
+  float glow = smoothstep(0.8, 1.8, field) * 0.3;
+
+  vec3 col = bgColor;
+  col += blobColor * blob;
+  col += blobColor * glow * 0.5;
+
+  // Glass tube edge darkening
+  float tube = smoothstep(0.5, 0.3, abs(uv.x));
+  col *= tube;
+
+  // Vertical gradient (warm at bottom)
+  col *= 0.7 + 0.3 * (1.0 - uv.y * 0.5);
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 10. GEOMETRY
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('geometry', 'Geometry', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float sdBox(vec2 p, vec2 b) {
+  vec2 d = abs(p) - b;
+  return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}
+
+float sdCircle(vec2 p, float r) { return length(p) - r; }
+
+mat2 rot(float a) { float c=cos(a),s=sin(a); return mat2(c,-s,s,c); }
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+  float t = u_time * 0.5;
+
+  vec3 col = vec3(0.02);
+
+  // Rotating grid of shapes
+  for (float i = 0.0; i < 5.0; i++) {
+    vec2 p = uv;
+    p *= rot(t * 0.2 * (1.0 + i * 0.3));
+    p *= 2.0 + i;
+
+    // Repeating grid
+    vec2 id = floor(p + 0.5);
+    p = fract(p + 0.5) - 0.5;
+
+    float r = t * 0.5 + (id.x + id.y) * 0.5;
+    p *= rot(r);
+
+    float shape;
+    float which = mod(id.x + id.y, 3.0);
+    if (which < 1.0) {
+      shape = sdBox(p, vec2(0.15));
+    } else if (which < 2.0) {
+      shape = sdCircle(p, 0.15);
+    } else {
+      // Triangle via max of half-planes
+      vec2 tp = p;
+      float tri = max(
+        abs(tp.x) * 0.866 + tp.y * 0.5,
+        -tp.y
+      ) - 0.15;
+      shape = tri;
+    }
+
+    float edge = smoothstep(0.01, 0.0, abs(shape) - 0.005);
+    float fill = smoothstep(0.01, 0.0, shape);
+
+    vec3 shapeColor = vec3(
+      0.3 + 0.3 * sin(id.x * 1.5 + t),
+      0.3 + 0.3 * sin(id.y * 2.0 + t * 1.3),
+      0.5 + 0.3 * sin((id.x + id.y) * 0.7 + t * 0.7)
+    );
+
+    float alpha = 0.15 / (1.0 + i * 0.5);
+    col += fill * shapeColor * alpha;
+    col += edge * shapeColor * alpha * 3.0;
+  }
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 11. AURORA
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('aurora', 'Aurora', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i), hash(i + vec2(1,0)), f.x),
+    mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x),
+    f.y
+  );
+}
+
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 5; i++) {
+    v += a * noise(p);
+    p = p * 2.0 + vec2(0.3, 0.7);
+    a *= 0.5;
+  }
+  return v;
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time * 0.15;
+
+  // Sky gradient (dark to deep blue)
+  vec3 col = mix(vec3(0.0, 0.0, 0.02), vec3(0.0, 0.02, 0.08), uv.y);
+
+  // Stars
+  vec2 starUV = uv * vec2(u_resolution.x / u_resolution.y, 1.0) * 80.0;
+  vec2 starId = floor(starUV);
+  float starH = hash(starId);
+  if (starH > 0.97) {
+    vec2 starPos = fract(starUV) - 0.5;
+    float starDist = length(starPos - (vec2(hash(starId + 1.0), hash(starId + 2.0)) - 0.5) * 0.6);
+    float twinkle = sin(u_time * (2.0 + starH * 5.0) + starH * 20.0) * 0.4 + 0.6;
+    col += vec3(0.8, 0.9, 1.0) * smoothstep(0.02, 0.0, starDist) * twinkle * 0.5;
+  }
+
+  // Aurora bands
+  for (float i = 0.0; i < 3.0; i++) {
+    float y = 0.5 + i * 0.1;
+    float wave = fbm(vec2(uv.x * 3.0 + t + i * 10.0, t * 0.5 + i)) * 0.15;
+    float band = exp(-pow((uv.y - y - wave) * 8.0, 2.0));
+
+    // Curtain effect - vertical striations
+    float curtain = fbm(vec2(uv.x * 8.0 + t * 0.5 + i * 5.0, uv.y * 2.0)) * 0.5 + 0.5;
+    band *= curtain;
+
+    vec3 auroraCol;
+    if (i < 1.0) auroraCol = vec3(0.1, 0.8, 0.3);
+    else if (i < 2.0) auroraCol = vec3(0.2, 0.5, 0.9);
+    else auroraCol = vec3(0.6, 0.2, 0.8);
+
+    col += auroraCol * band * 0.5;
+  }
+
+  // Ground silhouette
+  float ground = smoothstep(0.12, 0.1, uv.y + noise(vec2(uv.x * 5.0, 0.0)) * 0.05);
+  col = mix(col, vec3(0.0), ground);
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 12. BOUNCING LOGO (DVD corner-hit energy)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    (() => {
+      let program, uniforms;
+      SCRN.register({
+        id: 'dvd', name: 'DVD Logo',
+        init(ctx) {
+          program = ctx.createProgram(vs(), `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float sdBox(vec2 p, vec2 b) {
+  vec2 d = abs(p) - b;
+  return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float aspect = u_resolution.x / u_resolution.y;
+
+  float speed = 0.15;
+  float bx = mod(u_time * speed * 0.7, 2.0);
+  if (bx > 1.0) bx = 2.0 - bx;
+  float by = mod(u_time * speed * 0.5 + 0.3, 2.0);
+  if (by > 1.0) by = 2.0 - by;
+
+  vec2 center = vec2(bx, by);
+  vec2 p = uv - center;
+  p.x *= aspect;
+
+  // DVD text shape approximation
+  float w = 0.12, h = 0.04;
+  float d = sdBox(p, vec2(w, h));
+
+  // Color cycling based on bounce count
+  float bounces = floor(u_time * speed * 0.7) + floor(u_time * speed * 0.5 + 0.3);
+  vec3 col1 = vec3(0.2, 0.4, 1.0);
+  vec3 col2 = vec3(1.0, 0.2, 0.5);
+  vec3 col3 = vec3(0.1, 0.9, 0.4);
+  vec3 col4 = vec3(1.0, 0.7, 0.1);
+  float ci = mod(bounces, 4.0);
+  vec3 logoColor = ci < 1.0 ? col1 : ci < 2.0 ? col2 : ci < 3.0 ? col3 : col4;
+
+  float logo = smoothstep(0.005, 0.0, d);
+
+  // "DVD" text - three vertical bars with gaps
+  float textMask = 0.0;
+  float barW = 0.025;
+  float gap = 0.065;
+  for (float i = -1.0; i <= 1.0; i++) {
+    vec2 bp = p - vec2(i * gap, 0.0);
+    float bar = smoothstep(0.002, 0.0, sdBox(bp, vec2(barW, h * 0.7)));
+    textMask += bar;
+  }
+  textMask = min(textMask, 1.0);
+
+  // Glow
+  float glow = exp(-d * 30.0) * 0.4;
+
+  vec3 col = vec3(0.0);
+  col += logoColor * textMask * logo;
+  col += logoColor * glow;
+
+  // Trail
+  for (float tr = 1.0; tr < 6.0; tr++) {
+    float tt = u_time - tr * 0.15;
+    float tbx = mod(tt * speed * 0.7, 2.0);
+    if (tbx > 1.0) tbx = 2.0 - tbx;
+    float tby = mod(tt * speed * 0.5 + 0.3, 2.0);
+    if (tby > 1.0) tby = 2.0 - tby;
+    vec2 tp = uv - vec2(tbx, tby);
+    tp.x *= aspect;
+    float td = sdBox(tp, vec2(w, h));
+    float tglow = exp(-td * 40.0) * (0.15 / tr);
+    col += logoColor * tglow * 0.3;
+  }
+
+  fragColor = vec4(col, 1.0);
+}`);
+          uniforms = ctx.getUniforms(program, ['u_time', 'u_resolution']);
+          ctx.gl.disable(ctx.gl.DEPTH_TEST);
+        },
+        draw(ctx, dt) {
+          const gl = ctx.gl;
+          gl.useProgram(program);
+          gl.uniform1f(uniforms.u_time, ctx.time);
+          gl.uniform2f(uniforms.u_resolution, ctx.width, ctx.height);
+          ctx.drawQuad();
+        },
+        destroy(ctx) { if (program) ctx.gl.deleteProgram(program); }
+      });
+    })();
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 13. ELECTRIC
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('electric', 'Electric', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i+vec2(1,0)), f.x),
+             mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y);
+}
+
+float bolt(vec2 uv, vec2 a, vec2 b, float t, float seed) {
+  vec2 ba = b - a;
+  float l = length(ba);
+  vec2 dir = ba / l;
+  vec2 n = vec2(-dir.y, dir.x);
+
+  vec2 pa = uv - a;
+  float proj = dot(pa, dir);
+  float perp = dot(pa, n);
+
+  if (proj < 0.0 || proj > l) return 0.0;
+
+  float displacement = 0.0;
+  float amp = 0.04;
+  for (float i = 0.0; i < 5.0; i++) {
+    float freq = 8.0 + i * 12.0;
+    displacement += sin(proj * freq + t * (15.0 + i * 5.0) + seed * 10.0 + i) * amp;
+    amp *= 0.6;
+  }
+
+  float dist = abs(perp - displacement);
+  float core = exp(-dist * 300.0);
+  float glow = exp(-dist * 40.0) * 0.5;
+  return core + glow;
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+  float t = u_time;
+
+  vec3 col = vec3(0.01, 0.0, 0.03);
+
+  // Multiple bolts
+  for (float i = 0.0; i < 5.0; i++) {
+    float phase = t * 0.3 + i * 1.5;
+    float alive = step(0.0, sin(phase * 2.0 + i));
+    if (alive < 0.5) continue;
+
+    float flicker = hash(vec2(floor(t * 20.0), i)) > 0.3 ? 1.0 : 0.3;
+
+    vec2 a = vec2(
+      sin(t * 0.4 + i * 2.0) * 0.5,
+      sin(t * 0.3 + i * 1.7) * 0.3
+    );
+    vec2 b = vec2(
+      sin(t * 0.35 + i * 2.5 + 2.0) * 0.5,
+      sin(t * 0.45 + i * 1.3 + 1.0) * 0.3
+    );
+
+    float b1 = bolt(uv, a, b, t, i) * flicker;
+
+    vec3 boltColor = mix(
+      vec3(0.3, 0.5, 1.0),
+      vec3(0.8, 0.6, 1.0),
+      hash(vec2(i, 0.0))
+    );
+
+    col += b1 * boltColor * 1.5;
+  }
+
+  // Center orb
+  float orb = 0.02 / (length(uv) + 0.02);
+  col += vec3(0.3, 0.4, 0.8) * orb * 0.3;
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 14. OCEAN
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('ocean', 'Ocean', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p); vec2 f = fract(p);
+  f = f*f*(3.0-2.0*f);
+  return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);
+}
+
+float wave(vec2 p, float t) {
+  float w = 0.0;
+  w += sin(p.x * 2.0 + t * 1.5) * 0.3;
+  w += sin(p.x * 4.0 - t * 1.0 + p.y * 0.5) * 0.15;
+  w += sin(p.x * 7.0 + t * 2.0 + 1.0) * 0.08;
+  w += noise(p * 3.0 + t * 0.5) * 0.1;
+  return w;
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time * 0.6;
+
+  // Sky
+  vec3 skyTop = vec3(0.0, 0.02, 0.08);
+  vec3 skyBot = vec3(0.02, 0.05, 0.15);
+  vec3 col = mix(skyBot, skyTop, uv.y);
+
+  // Moon
+  vec2 moonPos = vec2(0.7, 0.8);
+  float moonDist = length(uv - moonPos);
+  col += vec3(0.8, 0.8, 0.7) * smoothstep(0.05, 0.0, moonDist) * 0.8;
+  col += vec3(0.3, 0.3, 0.25) * exp(-moonDist * 8.0) * 0.5;
+
+  // Stars
+  vec2 starUV = uv * 60.0;
+  vec2 sid = floor(starUV);
+  float sh = hash(sid);
+  if (sh > 0.96 && uv.y > 0.5) {
+    float sd = length(fract(starUV) - 0.5);
+    col += vec3(0.6, 0.7, 0.8) * smoothstep(0.04, 0.0, sd) * 0.3;
+  }
+
+  // Ocean surface
+  float horizon = 0.4;
+  if (uv.y < horizon) {
+    float depth = (horizon - uv.y) / horizon;
+    vec2 op = vec2(uv.x * 8.0, depth * 20.0);
+
+    float w = wave(op, t);
+    float w2 = wave(op + vec2(0.01, 0.0), t);
+    float normal = (w2 - w) / 0.01;
+
+    // Deep water color
+    vec3 deepColor = vec3(0.0, 0.03, 0.1);
+    vec3 surfColor = vec3(0.0, 0.1, 0.2);
+    vec3 waterCol = mix(surfColor, deepColor, depth);
+
+    // Specular / moon reflection
+    float refX = 0.7;
+    float refDist = abs(uv.x - refX);
+    float reflection = exp(-refDist * refDist * 20.0) * (1.0 - depth);
+    reflection *= (0.5 + 0.5 * sin(op.y * 3.0 + t * 2.0 + normal * 10.0));
+
+    waterCol += vec3(0.6, 0.6, 0.5) * reflection * 0.4;
+
+    // Foam at horizon
+    float foam = smoothstep(0.02, 0.0, abs(uv.y - horizon + w * 0.01));
+    waterCol += vec3(0.3, 0.4, 0.5) * foam;
+
+    col = waterCol;
+  }
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 15. CONWAY (Game of Life - computed in shader via texture ping-pong)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    (() => {
+      let simProgram, drawProgram, simUniforms, drawUniforms;
+      let fbos = [], textures = [];
+      let currentFBO = 0;
+      let gridW, gridH;
+      let initialized = false;
+
+      function createTex(gl, w, h, data) {
+        const tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        return tex;
+      }
+
+      SCRN.register({
+        id: 'conway', name: 'Game of Life',
+        init(ctx) {
+          const gl = ctx.gl;
+          gridW = Math.floor(ctx.cssWidth / 4);
+          gridH = Math.floor(ctx.cssHeight / 4);
+
+          // Sim shader - runs GoL rules
+          simProgram = ctx.createProgram(vs(), `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform sampler2D u_state;
+uniform vec2 u_gridSize;
+
+void main() {
+  vec2 px = 1.0 / u_gridSize;
+  float sum = 0.0;
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      if (x == 0 && y == 0) continue;
+      sum += texture(u_state, v_uv + vec2(float(x), float(y)) * px).r;
+    }
+  }
+  float self = texture(u_state, v_uv).r;
+  float alive = 0.0;
+  if (self > 0.5) {
+    alive = (sum > 1.5 && sum < 3.5) ? 1.0 : 0.0;
+  } else {
+    alive = (sum > 2.5 && sum < 3.5) ? 1.0 : 0.0;
+  }
+  fragColor = vec4(alive, alive, alive, 1.0);
+}`);
+          simUniforms = ctx.getUniforms(simProgram, ['u_state', 'u_gridSize']);
+
+          // Draw shader - renders with color
+          drawProgram = ctx.createProgram(vs(), `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform sampler2D u_state;
+uniform float u_time;
+
+void main() {
+  float cell = texture(u_state, v_uv).r;
+  vec3 alive_color = vec3(0.0, 0.9, 0.4);
+  vec3 dead_color = vec3(0.02, 0.02, 0.04);
+
+  // Slight color variation based on position
+  alive_color += vec3(
+    sin(v_uv.x * 10.0 + u_time * 0.5) * 0.1,
+    0.0,
+    cos(v_uv.y * 10.0 + u_time * 0.3) * 0.15
+  );
+
+  vec3 col = mix(dead_color, alive_color, cell);
+
+  // Grid lines
+  vec2 grid = fract(v_uv * vec2(${gridW}.0, ${gridH}.0));
+  float gridLine = step(grid.x, 0.05) + step(grid.y, 0.05);
+  col = mix(col, col * 0.7, gridLine * 0.3);
+
+  fragColor = vec4(col, 1.0);
+}`);
+          drawUniforms = ctx.getUniforms(drawProgram, ['u_state', 'u_time']);
+
+          // Init random state
+          const data = new Uint8Array(gridW * gridH * 4);
+          for (let i = 0; i < gridW * gridH; i++) {
+            const alive = Math.random() > 0.65 ? 255 : 0;
+            data[i * 4] = alive;
+            data[i * 4 + 1] = alive;
+            data[i * 4 + 2] = alive;
+            data[i * 4 + 3] = 255;
+          }
+
+          // Create ping-pong FBOs
+          for (let i = 0; i < 2; i++) {
+            textures[i] = createTex(gl, gridW, gridH, data);
+            fbos[i] = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbos[i]);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, textures[i], 0);
+          }
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          currentFBO = 0;
+          initialized = true;
+
+          gl.disable(gl.DEPTH_TEST);
+        },
+        draw(ctx, dt) {
+          if (!initialized) return;
+          const gl = ctx.gl;
+
+          // Sim step (multiple per frame for speed)
+          const steps = 2;
+          for (let s = 0; s < steps; s++) {
+            const src = currentFBO;
+            const dst = 1 - currentFBO;
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbos[dst]);
+            gl.viewport(0, 0, gridW, gridH);
+            gl.useProgram(simProgram);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, textures[src]);
+            gl.uniform1i(simUniforms.u_state, 0);
+            gl.uniform2f(simUniforms.u_gridSize, gridW, gridH);
+            ctx.drawQuad();
+            currentFBO = dst;
+          }
+
+          // Draw to screen
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.viewport(0, 0, ctx.width, ctx.height);
+          gl.useProgram(drawProgram);
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, textures[currentFBO]);
+          gl.uniform1i(drawUniforms.u_state, 0);
+          gl.uniform1f(drawUniforms.u_time, ctx.time);
+          ctx.drawQuad();
+        },
+        destroy(ctx) {
+          const gl = ctx.gl;
+          initialized = false;
+          for (let i = 0; i < 2; i++) {
+            if (textures[i]) gl.deleteTexture(textures[i]);
+            if (fbos[i]) gl.deleteFramebuffer(fbos[i]);
+          }
+          textures = []; fbos = [];
+          if (simProgram) gl.deleteProgram(simProgram);
+          if (drawProgram) gl.deleteProgram(drawProgram);
+        }
+      });
+    })();
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 16. FRACTAL ZOOM (Mandelbrot)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('fractal', 'Fractal', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+vec3 palette(float t) {
+  vec3 a = vec3(0.5, 0.5, 0.5);
+  vec3 b = vec3(0.5, 0.5, 0.5);
+  vec3 c = vec3(1.0, 1.0, 1.0);
+  vec3 d = vec3(0.0, 0.1, 0.2);
+  return a + b * cos(6.28318 * (c * t + d));
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+
+  // Zoom target: Seahorse valley
+  vec2 target = vec2(-0.743643887037151, 0.131825904205330);
+  float zoom = exp(mod(u_time * 0.3, 14.0));
+
+  vec2 c = target + uv / zoom;
+
+  vec2 z = vec2(0.0);
+  float iter = 0.0;
+  const float maxIter = 200.0;
+
+  for (float i = 0.0; i < maxIter; i++) {
+    z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
+    if (dot(z,z) > 4.0) { iter = i; break; }
+    iter = i;
+  }
+
+  vec3 col = vec3(0.0);
+  if (iter < maxIter - 1.0) {
+    // Smooth iteration count
+    float sl = iter - log2(log2(dot(z,z))) + 4.0;
+    float t = sl / 50.0 + u_time * 0.02;
+    col = palette(t);
+  }
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 17. VORONOI
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('voronoi', 'Voronoi', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+vec2 hash2(vec2 p) {
+  p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+  return fract(sin(p) * 43758.5453);
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float aspect = u_resolution.x / u_resolution.y;
+  uv.x *= aspect;
+  float t = u_time * 0.3;
+
+  float scale = 6.0;
+  vec2 p = uv * scale;
+  vec2 ip = floor(p);
+  vec2 fp = fract(p);
+
+  float minD = 10.0;
+  float minD2 = 10.0;
+  vec2 minId = vec2(0.0);
+
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      vec2 neighbor = vec2(float(x), float(y));
+      vec2 id = ip + neighbor;
+      vec2 pt = hash2(id);
+      pt = 0.5 + 0.5 * sin(t * (0.8 + pt * 0.4) + pt * 6.28);
+      float d = length(neighbor + pt - fp);
+      if (d < minD) {
+        minD2 = minD;
+        minD = d;
+        minId = id;
+      } else if (d < minD2) {
+        minD2 = d;
+      }
+    }
+  }
+
+  // Edge detection
+  float edge = minD2 - minD;
+  float edgeLine = smoothstep(0.0, 0.05, edge);
+
+  // Color per cell
+  vec2 h = hash2(minId);
+  vec3 cellCol = vec3(
+    0.3 + 0.4 * sin(h.x * 10.0 + t),
+    0.3 + 0.4 * sin(h.y * 8.0 + t * 1.3),
+    0.4 + 0.3 * sin((h.x + h.y) * 6.0 + t * 0.7)
+  );
+
+  vec3 col = cellCol * edgeLine;
+  col += vec3(0.8, 0.9, 1.0) * (1.0 - edgeLine) * 0.6;
+  col *= 0.7 + 0.3 * (1.0 - minD);
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 18. RINGS
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('rings', 'Rings', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+  float t = u_time * 0.6;
+
+  vec3 col = vec3(0.0);
+
+  for (float i = 0.0; i < 12.0; i++) {
+    float phase = i * 0.524 + t * 0.3;
+    vec2 center = vec2(sin(phase) * 0.2, cos(phase * 1.3) * 0.15);
+
+    float dist = length(uv - center);
+    float radius = 0.15 + 0.08 * sin(t + i * 0.7);
+    float ring = abs(dist - radius);
+    float thickness = 0.003 + 0.002 * sin(t * 2.0 + i);
+
+    float intensity = smoothstep(thickness, 0.0, ring);
+
+    // Pulse the ring over time
+    float pulse = 0.6 + 0.4 * sin(t * 1.5 + i * 0.8);
+    intensity *= pulse;
+
+    vec3 ringCol = vec3(
+      0.4 + 0.4 * sin(i * 0.5 + t * 0.2),
+      0.3 + 0.4 * sin(i * 0.7 + t * 0.3 + 2.0),
+      0.5 + 0.4 * sin(i * 0.9 + t * 0.4 + 4.0)
+    );
+
+    col += intensity * ringCol;
+
+    // Glow
+    col += ringCol * exp(-ring * 80.0) * 0.08 * pulse;
+  }
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 19. SMOKE
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('smoke', 'Smoke', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p); vec2 f = fract(p);
+  f = f*f*(3.0-2.0*f);
+  return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
+  for (int i = 0; i < 6; i++) { v += a * noise(p); p = rot * p * 2.0; a *= 0.5; }
+  return v;
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time * 0.2;
+
+  // Multiple smoke plumes
+  vec3 col = vec3(0.01, 0.01, 0.02);
+
+  for (float i = 0.0; i < 3.0; i++) {
+    vec2 origin = vec2(0.3 + i * 0.2, 0.0);
+    vec2 p = uv - origin;
+    p.x *= u_resolution.x / u_resolution.y;
+
+    // Rise and spread
+    float rise = p.y;
+    float spread = rise * 0.4;
+    p.x /= (1.0 + spread);
+
+    // Turbulence
+    float turb = fbm(vec2(p.x * 4.0 + t + i * 5.0, p.y * 3.0 - t * 1.5)) - 0.5;
+    p.x += turb * rise * 0.4;
+
+    float density = exp(-p.x * p.x * 8.0);
+    density *= smoothstep(0.0, 0.15, rise);
+    density *= smoothstep(1.2, 0.3, rise);
+
+    float detail = fbm(vec2(p.x * 8.0 + t * 0.5 + i * 3.0, p.y * 6.0 - t * 2.0));
+    density *= 0.5 + detail;
+
+    vec3 smokeCol = mix(
+      vec3(0.15, 0.12, 0.1),
+      vec3(0.4, 0.35, 0.3),
+      rise
+    );
+
+    // Warm light from below
+    smokeCol += vec3(0.3, 0.15, 0.05) * exp(-rise * 3.0) * density;
+
+    col += smokeCol * density * 0.5;
+  }
+
+  // Subtle ember particles
+  for (float i = 0.0; i < 15.0; i++) {
+    float seed = i * 7.13;
+    float et = mod(t * 3.0 + seed, 4.0);
+    vec2 ep = vec2(
+      0.3 + hash(vec2(seed, 0.0)) * 0.4 + sin(et * 2.0 + seed) * 0.05,
+      et * 0.25
+    );
+    float ed = length((uv - ep) * vec2(u_resolution.x/u_resolution.y, 1.0));
+    float ember = exp(-ed * ed * 2000.0) * smoothstep(4.0, 3.5, et) * smoothstep(0.0, 0.3, et);
+    col += vec3(1.0, 0.5, 0.1) * ember;
+  }
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 20. NEON GRID (Tron/synthwave)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('neongrid', 'Neon Grid', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time;
+
+  // Perspective transform
+  float horizon = 0.5;
+  vec3 col = vec3(0.0);
+
+  if (uv.y < horizon) {
+    // Ground plane
+    float depth = (horizon - uv.y) / horizon;
+    float z = 1.0 / (depth + 0.001);
+    float x = (uv.x - 0.5) * z * 2.0;
+
+    // Scrolling grid
+    float gz = mod(z + t * 3.0, 1.0);
+    float gx = mod(x, 1.0);
+
+    float lineZ = smoothstep(0.05, 0.0, abs(gz - 0.5) - 0.47);
+    float lineX = smoothstep(0.05, 0.0, abs(gx - 0.5) - 0.47);
+    float grid = max(lineZ, lineX);
+
+    // Depth fog
+    float fog = exp(-depth * 0.5);
+    grid *= fog;
+
+    vec3 gridCol = vec3(0.8, 0.0, 0.9);
+    col += grid * gridCol;
+
+    // Ground glow
+    col += vec3(0.05, 0.0, 0.08) * fog;
+  } else {
+    // Sky gradient
+    float skyT = (uv.y - horizon) / (1.0 - horizon);
+    col = mix(vec3(0.15, 0.0, 0.2), vec3(0.0, 0.0, 0.05), skyT);
+
+    // Sun
+    vec2 sunPos = vec2(0.5, 0.65);
+    float sunDist = length(uv - sunPos);
+    float sun = smoothstep(0.12, 0.11, sunDist);
+
+    // Sun stripes
+    float stripes = step(0.5, fract(uv.y * 40.0));
+    float stripeMask = smoothstep(0.04, 0.12, sunDist);
+    sun *= mix(1.0, stripes, stripeMask);
+
+    vec3 sunGrad = mix(vec3(1.0, 0.9, 0.2), vec3(1.0, 0.2, 0.5), smoothstep(0.0, 0.12, sunDist));
+    col += sun * sunGrad;
+
+    // Sun glow
+    col += vec3(1.0, 0.3, 0.5) * exp(-sunDist * 6.0) * 0.3;
+  }
+
+  // Horizon glow
+  float horizonGlow = exp(-abs(uv.y - horizon) * 20.0);
+  col += vec3(0.8, 0.2, 0.9) * horizonGlow * 0.3;
+
+  // Scanlines
+  col *= 0.95 + 0.05 * sin(gl_FragCoord.y * 1.5);
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 21. FLOCKING (Boids)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    (() => {
+      let program, uniforms;
+      const NUM_BOIDS = 200;
+      let boids = [];
+
+      function initBoids(aspect) {
+        boids = [];
+        for (let i = 0; i < NUM_BOIDS; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 0.1 + Math.random() * 0.15;
+          boids.push({
+            x: Math.random() * aspect,
+            y: Math.random(),
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+          });
+        }
+      }
+
+      function updateBoids(dt, aspect) {
+        const sepDist = 0.04, aliDist = 0.08, cohDist = 0.1;
+        const sepForce = 2.0, aliForce = 0.8, cohForce = 0.5;
+        const maxSpeed = 0.25, minSpeed = 0.08;
+
+        for (let i = 0; i < NUM_BOIDS; i++) {
+          const b = boids[i];
+          let sx = 0, sy = 0, sc = 0;
+          let ax = 0, ay = 0, ac = 0;
+          let cx = 0, cy = 0, cc = 0;
+
+          for (let j = 0; j < NUM_BOIDS; j++) {
+            if (i === j) continue;
+            const o = boids[j];
+            const dx = o.x - b.x, dy = o.y - b.y;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d < sepDist && d > 0) { sx -= dx / d; sy -= dy / d; sc++; }
+            if (d < aliDist) { ax += o.vx; ay += o.vy; ac++; }
+            if (d < cohDist) { cx += o.x; cy += o.y; cc++; }
+          }
+
+          if (sc > 0) { b.vx += sx / sc * sepForce * dt; b.vy += sy / sc * sepForce * dt; }
+          if (ac > 0) { b.vx += (ax / ac - b.vx) * aliForce * dt; b.vy += (ay / ac - b.vy) * aliForce * dt; }
+          if (cc > 0) { b.vx += (cx / cc - b.x) * cohForce * dt; b.vy += (cy / cc - b.y) * cohForce * dt; }
+
+          // Speed limits
+          const spd = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+          if (spd > maxSpeed) { b.vx = b.vx / spd * maxSpeed; b.vy = b.vy / spd * maxSpeed; }
+          if (spd < minSpeed && spd > 0) { b.vx = b.vx / spd * minSpeed; b.vy = b.vy / spd * minSpeed; }
+
+          b.x += b.vx * dt; b.y += b.vy * dt;
+
+          // Wrap
+          if (b.x < 0) b.x += aspect; if (b.x > aspect) b.x -= aspect;
+          if (b.y < 0) b.y += 1; if (b.y > 1) b.y -= 1;
+        }
+      }
+
+      SCRN.register({
+        id: 'flock', name: 'Flock',
+        init(ctx) {
+          program = ctx.createProgram(vs(), `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+uniform vec4 u_boids[${NUM_BOIDS}];
+uniform int u_numBoids;
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float aspect = u_resolution.x / u_resolution.y;
+  vec2 p = vec2(uv.x * aspect, uv.y);
+
+  vec3 col = vec3(0.01, 0.02, 0.04);
+
+  // Subtle trail field
+  float field = 0.0;
+
+  for (int i = 0; i < ${NUM_BOIDS}; i++) {
+    vec4 boid = u_boids[i]; // xy = pos, zw = vel
+    vec2 bp = boid.xy;
+    vec2 bv = normalize(boid.zw);
+
+    vec2 diff = p - bp;
+    float d = length(diff);
+
+    // Triangle shape pointing in velocity direction
+    vec2 perp = vec2(-bv.y, bv.x);
+    float forward = dot(diff, -bv);
+    float side = abs(dot(diff, perp));
+    float triDist = max(forward * 3.0, side - 0.003 + forward * 0.5);
+
+    float tri = smoothstep(0.01, 0.0, triDist) * step(-0.008, forward);
+    col += vec3(0.5, 0.8, 1.0) * tri;
+
+    // Glow
+    field += 0.00003 / (d * d + 0.0001);
+  }
+
+  col += vec3(0.1, 0.3, 0.5) * field;
+
+  fragColor = vec4(col, 1.0);
+}`);
+          uniforms = ctx.getUniforms(program, ['u_time', 'u_resolution', 'u_numBoids']);
+          // Get boid uniform locations
+          uniforms.boids = [];
+          for (let i = 0; i < NUM_BOIDS; i++) {
+            uniforms.boids[i] = ctx.gl.getUniformLocation(program, `u_boids[${i}]`);
+          }
+          const aspect = ctx.cssWidth / ctx.cssHeight;
+          initBoids(aspect);
+          ctx.gl.disable(ctx.gl.DEPTH_TEST);
+        },
+        draw(ctx, dt) {
+          const gl = ctx.gl;
+          const aspect = ctx.cssWidth / ctx.cssHeight;
+          updateBoids(dt, aspect);
+
+          gl.useProgram(program);
+          gl.uniform1f(uniforms.u_time, ctx.time);
+          gl.uniform2f(uniforms.u_resolution, ctx.width, ctx.height);
+          gl.uniform1i(uniforms.u_numBoids, NUM_BOIDS);
+
+          for (let i = 0; i < NUM_BOIDS; i++) {
+            const b = boids[i];
+            gl.uniform4f(uniforms.boids[i], b.x, b.y, b.vx, b.vy);
+          }
+
+          ctx.drawQuad();
+        },
+        destroy(ctx) {
+          if (program) ctx.gl.deleteProgram(program);
+          boids = [];
+        }
+      });
+    })();
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 22. CLOCK (Analog ambient clock)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('clock', 'Clock', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float sdSegment(vec2 p, vec2 a, vec2 b) {
+  vec2 pa = p-a, ba = b-a;
+  float h = clamp(dot(pa,ba)/dot(ba,ba), 0.0, 1.0);
+  return length(pa - ba*h);
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+  float t = u_time;
+
+  vec3 col = vec3(0.02, 0.02, 0.03);
+
+  float dist = length(uv);
+
+  // Clock face
+  float face = smoothstep(0.42, 0.41, dist) * 0.05;
+  col += vec3(0.1, 0.1, 0.12) * face;
+
+  // Hour markers
+  for (float i = 0.0; i < 12.0; i++) {
+    float a = i * 3.14159 * 2.0 / 12.0;
+    vec2 inner = vec2(sin(a), cos(a)) * 0.35;
+    vec2 outer = vec2(sin(a), cos(a)) * 0.40;
+    float md = sdSegment(uv, inner, outer);
+    float marker = smoothstep(0.004, 0.001, md);
+    col += vec3(0.3, 0.3, 0.35) * marker;
+  }
+
+  // Minute ticks
+  for (float i = 0.0; i < 60.0; i++) {
+    float a = i * 3.14159 * 2.0 / 60.0;
+    vec2 inner = vec2(sin(a), cos(a)) * 0.38;
+    vec2 outer = vec2(sin(a), cos(a)) * 0.40;
+    float md = sdSegment(uv, inner, outer);
+    float marker = smoothstep(0.002, 0.0005, md);
+    col += vec3(0.15, 0.15, 0.18) * marker;
+  }
+
+  // Calculate actual clock time from unix-ish offset
+  // We'll use u_time as seconds and derive fake clock hands
+  float seconds = mod(t, 60.0);
+  float minutes = mod(t / 60.0, 60.0);
+  float hours = mod(t / 3600.0, 12.0);
+
+  // Second hand
+  float sa = seconds * 3.14159 * 2.0 / 60.0;
+  vec2 se = vec2(sin(sa), cos(sa)) * 0.35;
+  float sd = sdSegment(uv, vec2(0.0), se);
+  col += vec3(0.8, 0.2, 0.2) * smoothstep(0.002, 0.0, sd);
+
+  // Minute hand
+  float ma = minutes * 3.14159 * 2.0 / 60.0;
+  vec2 me = vec2(sin(ma), cos(ma)) * 0.30;
+  float mdd = sdSegment(uv, vec2(0.0), me);
+  col += vec3(0.7, 0.7, 0.75) * smoothstep(0.003, 0.0, mdd);
+
+  // Hour hand
+  float ha = hours * 3.14159 * 2.0 / 12.0;
+  vec2 he = vec2(sin(ha), cos(ha)) * 0.20;
+  float hd = sdSegment(uv, vec2(0.0), he);
+  col += vec3(0.7, 0.7, 0.75) * smoothstep(0.004, 0.001, hd);
+
+  // Center dot
+  col += vec3(0.8, 0.2, 0.2) * smoothstep(0.008, 0.004, dist);
+
+  // Ring
+  float ring = abs(dist - 0.41);
+  col += vec3(0.2, 0.2, 0.25) * smoothstep(0.003, 0.0, ring);
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 23. GALAXY
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('galaxy', 'Galaxy', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p); vec2 f = fract(p);
+  f = f*f*(3.0-2.0*f);
+  return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+  float t = u_time * 0.05;
+
+  vec3 col = vec3(0.0, 0.0, 0.005);
+
+  float dist = length(uv);
+  float angle = atan(uv.y, uv.x);
+
+  // Spiral arms
+  for (float arm = 0.0; arm < 2.0; arm++) {
+    float armAngle = angle + arm * 3.14159 + t * 2.0;
+    float spiral = armAngle - log(dist + 0.001) * 3.0;
+    float armBright = pow(0.5 + 0.5 * sin(spiral * 2.0), 8.0);
+    armBright *= exp(-dist * 3.0);
+
+    // Add noise to arms
+    float n = noise(vec2(spiral * 2.0, dist * 10.0 + t));
+    armBright *= 0.5 + n;
+
+    vec3 armCol = mix(
+      vec3(0.3, 0.4, 0.8),
+      vec3(0.8, 0.3, 0.5),
+      dist * 2.0
+    );
+    col += armCol * armBright * 0.5;
+  }
+
+  // Central bulge
+  float bulge = exp(-dist * dist * 20.0);
+  col += vec3(1.0, 0.9, 0.7) * bulge * 0.6;
+
+  // Star field
+  vec2 starUV = uv * 100.0;
+  vec2 sid = floor(starUV);
+  float sh = hash(sid);
+  if (sh > 0.93) {
+    float sd = length(fract(starUV) - 0.5);
+    float starBright = smoothstep(0.04, 0.0, sd) * (sh - 0.93) * 14.0;
+    float twinkle = sin(u_time * (2.0 + sh * 6.0) + sh * 30.0) * 0.3 + 0.7;
+    col += mix(vec3(0.8, 0.9, 1.0), vec3(1.0, 0.8, 0.6), sh) * starBright * twinkle;
+  }
+
+  // Subtle dust lanes
+  float dust = noise(vec2(angle * 3.0 + t, dist * 8.0));
+  col *= 0.8 + 0.2 * dust;
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 24. TERRAIN (Fly-over wireframe)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('terrain', 'Terrain', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p); vec2 f = fract(p);
+  f = f*f*(3.0-2.0*f);
+  return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 5; i++) { v += a*noise(p); p *= 2.0; a *= 0.5; }
+  return v;
+}
+
+float terrain(vec2 p) {
+  return fbm(p * 0.5) * 0.4;
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time * 0.5;
+
+  vec3 col = vec3(0.0);
+
+  // Sky
+  col = mix(vec3(0.0, 0.02, 0.06), vec3(0.0, 0.0, 0.02), uv.y);
+
+  // Raymarched terrain
+  float horizon = 0.35;
+  if (uv.y < horizon + 0.05) {
+    float depth = max(0.001, (horizon - uv.y) / horizon);
+    float z = 0.5 / depth;
+    float x = (uv.x - 0.5) * z * 2.5;
+
+    vec2 worldPos = vec2(x, z + t * 3.0);
+    float h = terrain(worldPos);
+
+    // Grid lines
+    vec2 gridPos = worldPos * 4.0;
+    vec2 gf = abs(fract(gridPos) - 0.5);
+    float gridLine = 1.0 - smoothstep(0.0, 0.06, min(gf.x, gf.y));
+
+    float fog = exp(-depth * 1.5);
+    gridLine *= fog;
+
+    // Height-based color
+    vec3 terrainCol = mix(
+      vec3(0.0, 0.4, 0.3),
+      vec3(0.0, 0.8, 0.6),
+      h * 2.0
+    );
+
+    // Project height
+    float projectedY = uv.y + h * (1.0 - depth) * 0.3;
+    float aboveHorizon = smoothstep(horizon + 0.05, horizon - 0.02, projectedY);
+
+    col = mix(col, terrainCol * gridLine, aboveHorizon * fog);
+
+    // Wireframe glow
+    col += terrainCol * gridLine * fog * 0.3;
+  }
+
+  // Stars
+  vec2 starUV = uv * 50.0;
+  vec2 sid = floor(starUV);
+  float sh = hash(sid);
+  if (sh > 0.97 && uv.y > horizon) {
+    float sd = length(fract(starUV) - 0.5);
+    col += vec3(0.5, 0.6, 0.8) * smoothstep(0.03, 0.0, sd) * 0.3;
+  }
+
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 25. KALEIDOSCOPE
+    // ═══════════════════════════════════════════════════════════════════════════════
+    SCRN.register(shaderEffect('kaleidoscope', 'Kaleidoscope', `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p); vec2 f = fract(p);
+  f = f*f*(3.0-2.0*f);
+  return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+  float t = u_time * 0.4;
+
+  // Polar coordinates
+  float r = length(uv);
+  float a = atan(uv.y, uv.x);
+
+  // Kaleidoscope fold
+  float segments = 8.0;
+  a = mod(a, 3.14159 * 2.0 / segments);
+  a = abs(a - 3.14159 / segments);
+
+  // Back to cartesian (warped)
+  vec2 p = vec2(cos(a), sin(a)) * r;
+
+  // Animate
+  p += t * 0.1;
+  p *= 3.0;
+
+  // Layered pattern
+  vec3 col = vec3(0.0);
+  for (float i = 0.0; i < 4.0; i++) {
+    float n = noise(p * (1.0 + i * 0.5) + t * (0.3 + i * 0.1));
+    float ring = sin(r * 15.0 - t * 2.0 + i + n * 3.0);
+    ring = smoothstep(0.0, 0.3, ring);
+
+    vec3 layerCol = vec3(
+      0.5 + 0.5 * sin(i * 1.5 + t * 0.3),
+      0.5 + 0.5 * sin(i * 2.0 + t * 0.4 + 2.0),
+      0.5 + 0.5 * sin(i * 2.5 + t * 0.5 + 4.0)
+    );
+
+    col += layerCol * ring * 0.25;
+  }
+
+  // Center jewel
+  float jewel = smoothstep(0.05, 0.02, r);
+  col += vec3(1.0, 0.9, 0.8) * jewel * 0.5;
+
+  col *= 0.8 + 0.2 * (1.0 - r);
+  fragColor = vec4(col, 1.0);
+}`));
+
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // BOOT
+    // ═══════════════════════════════════════════════════════════════════════════════
+  </script>
+  <script src="effects/pipes.js"></script>
+  <script src="effects/flurry.js"></script>
+  <script src="effects/toasters.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!SCRN.initGL()) return;
+      SCRN.buildUI();
+      SCRN.initEvents();
+      SCRN.start();
+
+      // Start with a random effect
+      const ids = [...SCRN.state.effects.keys()];
+      const startId = ids[Math.floor(Math.random() * ids.length)];
+      SCRN.switchEffect(startId);
+    });
+  </script>
+
+</body>
+
+</html>
