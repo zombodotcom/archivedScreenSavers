@@ -233,77 +233,134 @@ void main() {
 }`, { name: 'Mystify', desc: 'Bouncing polygon lines with trails' });
 
 register('pipes', `
+// Windows 95-style 3D Pipes with elbow joints and metallic colors
+// Based on original Microsoft OpenGL screensaver algorithm
+
+// SDF for a torus (elbow joint)
+float sdTorus(vec3 p, vec2 t) {
+  vec2 q = vec2(length(p.xz) - t.x, p.y);
+  return length(q) - t.y;
+}
+
+// Metallic pipe colors (classic Windows palette)
+vec3 getPipeColor(float id) {
+  int colorIdx = int(mod(id * 7.0, 6.0));
+  if (colorIdx == 0) return vec3(0.8, 0.15, 0.1);   // Red
+  if (colorIdx == 1) return vec3(0.1, 0.4, 0.8);   // Blue
+  if (colorIdx == 2) return vec3(0.1, 0.7, 0.2);   // Green
+  if (colorIdx == 3) return vec3(0.6, 0.1, 0.7);   // Purple
+  if (colorIdx == 4) return vec3(0.9, 0.7, 0.1);   // Gold
+  return vec3(0.7, 0.7, 0.75);                      // Silver
+}
+
 void main() {
   vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
-  vec3 col = vec3(0.0);
+  vec3 col = vec3(0.02, 0.02, 0.05); // Dark background like original
 
   float camT = u_time * u_camSpeed;
 
-  // Camera position - offset to stay between pipe cells
+  // Camera flies through the pipe network (like original)
   vec3 ro = vec3(
-    sin(camT) * u_camDistance + 0.5,
-    sin(camT * 0.7) * (u_camDistance * 0.4) + 0.5,
-    cos(camT) * u_camDistance + 0.5
+    sin(camT * 0.7) * u_camDistance * 0.8,
+    sin(camT * 0.4) * u_camDistance * 0.5,
+    u_time * 0.5 + cos(camT * 0.3) * u_camDistance * 0.3
   );
-  vec3 ta = vec3(0.5);
+
+  // Look ahead in the direction of travel
+  vec3 ta = ro + vec3(sin(camT * 0.5) * 2.0, sin(camT * 0.3), 3.0);
   vec3 fwd = normalize(ta - ro);
   vec3 right = normalize(cross(vec3(0,1,0), fwd));
   vec3 up = cross(fwd, right);
   vec3 rd = normalize(uv.x * right + uv.y * up + 1.5 * fwd);
 
-  // Start ray a bit away from camera to avoid clipping
-  float t = 0.5;
-  for (int i = 0; i < 60; i++) {  // Reduced from 80 iterations
+  float t = 0.1;
+  vec3 hitColor = col;
+
+  for (int i = 0; i < 50; i++) {
     vec3 p = ro + rd * t;
-    vec3 q = mod(p + u_gridSpacing * 0.5, u_gridSpacing) - u_gridSpacing * 0.5;
 
-    // Pipes along axes
-    float dx = length(q.yz) - u_pipeThickness;
-    float dy = length(q.xz) - u_pipeThickness;
-    float dz = length(q.xy) - u_pipeThickness;
+    // Grid cell position
+    vec3 cellId = floor(p / u_gridSpacing);
+    vec3 q = mod(p, u_gridSpacing) - u_gridSpacing * 0.5;
 
-    // Ball joints
-    float ball = length(q) - u_jointSize;
+    // Pipes along axes (cylinders)
+    float pipeR = u_pipeThickness;
+    float dx = length(q.yz) - pipeR;
+    float dy = length(q.xz) - pipeR;
+    float dz = length(q.xy) - pipeR;
 
-    float d = min(min(min(dx, dy), dz), ball);
+    // Elbow joints (quarter torus at corners)
+    float elbowR = u_gridSpacing * 0.25;  // Major radius
+    float jointR = pipeR * 1.1;            // Minor radius (slightly larger)
 
-    if (d < 0.005) {  // Larger threshold for faster convergence
-      // Normal approximation
-      vec2 e = vec2(0.01, 0.0);
-      vec3 n = normalize(d - vec3(
-        min(min(length((q+e.xyy).yz)-u_pipeThickness, length((q+e.xyy).xz)-u_pipeThickness), min(length((q+e.xyy).xy)-u_pipeThickness, length(q+e.xyy)-u_jointSize)),
-        min(min(length((q+e.yxy).yz)-u_pipeThickness, length((q+e.yxy).xz)-u_pipeThickness), min(length((q+e.yxy).xy)-u_pipeThickness, length(q+e.yxy)-u_jointSize)),
-        min(min(length((q+e.yyx).yz)-u_pipeThickness, length((q+e.yyx).xz)-u_pipeThickness), min(length((q+e.yyx).xy)-u_pipeThickness, length(q+e.yyx)-u_jointSize))
+    // Create elbow joints at each axis-aligned corner
+    vec3 corner = sign(q) * (u_gridSpacing * 0.5 - elbowR);
+    vec3 qc = q - corner;
+
+    // XY plane elbow
+    float elbowXY = sdTorus(qc.xzy, vec2(elbowR, jointR));
+    // XZ plane elbow
+    float elbowXZ = sdTorus(qc, vec2(elbowR, jointR));
+    // YZ plane elbow
+    float elbowYZ = sdTorus(qc.yxz, vec2(elbowR, jointR));
+
+    float elbow = min(min(elbowXY, elbowXZ), elbowYZ);
+
+    // Ball joints at intersections (for caps and multi-way joints)
+    float ball = length(q) - jointR * 1.3;
+
+    float d = min(min(min(min(dx, dy), dz), elbow), ball);
+
+    if (d < 0.004) {
+      // Compute normal via gradient
+      vec2 e = vec2(0.005, 0.0);
+      vec3 p2 = p;
+
+      // Simplified normal calculation
+      vec3 n = normalize(vec3(
+        length(mod(p2+e.xyy, u_gridSpacing) - u_gridSpacing*0.5) - length(mod(p2-e.xyy, u_gridSpacing) - u_gridSpacing*0.5),
+        length(mod(p2+e.yxy, u_gridSpacing) - u_gridSpacing*0.5) - length(mod(p2-e.yxy, u_gridSpacing) - u_gridSpacing*0.5),
+        length(mod(p2+e.yyx, u_gridSpacing) - u_gridSpacing*0.5) - length(mod(p2-e.yyx, u_gridSpacing) - u_gridSpacing*0.5)
       ));
 
-      vec3 light = normalize(vec3(1.0, 2.0, -1.0));
-      float diff = max(dot(n, light), 0.0) * 0.7 + 0.3;
-      float spec = pow(max(dot(reflect(-light, n), -rd), 0.0), u_shininess);
+      // Lighting (classic OpenGL style)
+      vec3 light1 = normalize(vec3(0.5, 1.0, 0.3));
+      vec3 light2 = normalize(vec3(-0.3, 0.5, -0.5));
 
-      // Color by grid cell
-      vec3 cellId = floor((p + u_gridSpacing * 0.5) / u_gridSpacing);
-      vec3 pipeCol = 0.5 + 0.5 * cos(6.28 * (hash(cellId.xy + cellId.z) * u_colorVariety + u_time * u_colorSpeed + vec3(0.0, 0.33, 0.67)));
+      float diff = max(dot(n, light1), 0.0) * 0.6 + max(dot(n, light2), 0.0) * 0.3 + 0.2;
+      float spec = pow(max(dot(reflect(-light1, n), -rd), 0.0), u_shininess) * 0.5;
 
-      col = pipeCol * diff + vec3(1.0) * spec * 0.3;
+      // Get pipe color based on cell
+      float colorId = hash(cellId.xy + cellId.z * 0.1);
+      vec3 baseCol = getPipeColor(colorId);
+
+      // Metallic shading
+      hitColor = baseCol * diff + vec3(1.0) * spec;
+
+      // Add slight color variation for visual interest
+      hitColor += 0.05 * cos(cellId * 2.0 + u_time * u_colorSpeed);
+
       break;
     }
-    t += d;  // Full step size (was 0.9), safe due to SDF
-    if (t > 25.0) break;  // Reduced max distance
+
+    t += d * 0.95;
+    if (t > 20.0) break;
   }
+
+  // Distance fog (like original)
+  col = mix(hitColor, col, smoothstep(5.0, 20.0, t));
 
   fragColor = vec4(col, 1.0);
 }`, {
   name: '3D Pipes',
-  desc: 'Building pipe networks with ball joints',
+  desc: 'Classic Windows 95 pipes with metallic colors',
   settings: {
-    pipeThickness: { value: 0.12, min: 0.05, max: 0.3, step: 0.01, label: 'Pipe Thickness' },
-    jointSize: { value: 0.18, min: 0.1, max: 0.4, step: 0.01, label: 'Joint Size' },
-    camSpeed: { value: 0.2, min: 0.05, max: 0.5, step: 0.01, label: 'Camera Speed' },
-    camDistance: { value: 8.0, min: 4.0, max: 15.0, step: 0.5, label: 'Camera Distance' },
-    gridSpacing: { value: 2.0, min: 1.0, max: 4.0, step: 0.1, label: 'Pipe Density' },
-    colorSpeed: { value: 0.0, min: 0.0, max: 0.5, step: 0.01, label: 'Color Animation' },
-    colorVariety: { value: 1.0, min: 0.2, max: 2.0, step: 0.1, label: 'Color Variety' },
-    shininess: { value: 16.0, min: 2.0, max: 64.0, step: 2.0, label: 'Shininess' }
+    pipeThickness: { value: 0.12, min: 0.05, max: 0.25, step: 0.01, label: 'Pipe Thickness' },
+    camSpeed: { value: 0.15, min: 0.05, max: 0.4, step: 0.01, label: 'Camera Speed' },
+    camDistance: { value: 6.0, min: 3.0, max: 12.0, step: 0.5, label: 'Camera Distance' },
+    gridSpacing: { value: 2.5, min: 1.5, max: 4.0, step: 0.1, label: 'Pipe Spacing' },
+    colorSpeed: { value: 0.0, min: 0.0, max: 0.3, step: 0.01, label: 'Color Shift' },
+    shininess: { value: 32.0, min: 8.0, max: 64.0, step: 4.0, label: 'Shininess' }
   }
 });
 
