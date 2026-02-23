@@ -4721,4 +4721,255 @@ void main() {
     fragColor = vec4(col, 1.0);
 }`, { name: 'Electropaint', desc: 'Fluid Flow Paint Simulation -Antigravity' });
 
+// ============================================================================
+// AFTER DARK - More Classics
+// ============================================================================
+
+register('boris', `
+// After Dark Boris - mischievous cat causing chaos
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time;
+  vec3 col = vec3(0.0, 0.5, 0.5);
+
+  // Fake windows on desktop
+  for (float i = 0.0; i < 4.0; i++) {
+    vec2 winPos = vec2(0.15 + mod(i, 2.0) * 0.4, 0.25 + floor(i / 2.0) * 0.35);
+    vec2 winSize = vec2(0.3, 0.25);
+    if (uv.x > winPos.x && uv.x < winPos.x + winSize.x && uv.y > winPos.y && uv.y < winPos.y + winSize.y) {
+      col = vec3(0.9);
+      if (uv.y > winPos.y + winSize.y - 0.03) col = vec3(0.0, 0.0, 0.5);
+    }
+  }
+
+  // Boris the cat
+  float borisX = 0.3 + sin(t * 0.5) * 0.25;
+  float borisY = 0.4 + cos(t * 0.3) * 0.15;
+  vec2 borisPos = vec2(borisX, borisY);
+  vec2 toBoris = uv - borisPos;
+  float body = length(toBoris * vec2(1.0, 2.0));
+  float catBody = smoothstep(0.07, 0.06, body);
+  vec2 headPos = borisPos + vec2(0.06, 0.02);
+  float head = smoothstep(0.045, 0.04, length(uv - headPos));
+  vec2 ear1 = headPos + vec2(-0.025, 0.035);
+  vec2 ear2 = headPos + vec2(0.025, 0.035);
+  float ears = smoothstep(0.02, 0.015, length((uv - ear1) * vec2(1.0, 0.6)));
+  ears += smoothstep(0.02, 0.015, length((uv - ear2) * vec2(1.0, 0.6)));
+  vec2 tailStart = borisPos + vec2(-0.06, 0.0);
+  float tailAngle = sin(t * 5.0) * 0.4 + 2.5;
+  vec2 tailEnd = tailStart + vec2(cos(tailAngle), sin(tailAngle)) * 0.08;
+  float tail = smoothstep(0.012, 0.006, line(uv, tailStart, tailEnd));
+  vec2 eye1 = headPos + vec2(-0.015, 0.005);
+  vec2 eye2 = headPos + vec2(0.015, 0.005);
+  float eyes = smoothstep(0.008, 0.005, length(uv - eye1));
+  eyes += smoothstep(0.008, 0.005, length(uv - eye2));
+  float cat = max(max(catBody, head), max(ears, tail));
+  col = mix(col, vec3(0.2), cat);
+  col = mix(col, vec3(0.9, 0.8, 0.2), eyes);
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Boris', desc: 'Mischievous cat on desktop' });
+
+register('nocturnes', `
+// After Dark Nocturnes - dark atmospheric night scenes
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time * 0.1;
+  vec3 col = mix(vec3(0.02, 0.02, 0.08), vec3(0.0, 0.0, 0.03), uv.y);
+
+  // Stars
+  for (float i = 0.0; i < 100.0; i++) {
+    vec2 starPos = vec2(hash(vec2(i, 0.0)), hash(vec2(i, 1.0)));
+    float starBright = hash(vec2(i, 2.0));
+    float twinkle = sin(t * 10.0 + i * 3.0) * 0.3 + 0.7;
+    float d = length(uv - starPos);
+    col += vec3(1.0, 0.95, 0.9) * smoothstep(0.003, 0.0, d) * starBright * twinkle;
+  }
+
+  // Moon
+  vec2 moonPos = vec2(0.75, 0.8);
+  float moon = smoothstep(0.08, 0.07, length(uv - moonPos));
+  col += vec3(0.9, 0.9, 0.8) * moon;
+  col += vec3(0.2, 0.2, 0.3) * exp(-length(uv - moonPos) * 5.0);
+
+  // Silhouette hills
+  float hill = smoothstep(0.0, 0.02, uv.y - 0.15 - sin(uv.x * 3.0) * 0.05);
+  col *= hill;
+
+  // Fireflies
+  for (float i = 0.0; i < 12.0; i++) {
+    float flyX = hash(vec2(i, 20.0)) * 0.8 + 0.1;
+    float flyY = hash(vec2(i, 21.0)) * 0.2 + 0.15;
+    flyX += sin(t * 50.0 + i * 2.0) * 0.02;
+    flyY += cos(t * 40.0 + i * 1.5) * 0.02;
+    float blink = smoothstep(0.3, 0.7, sin(t * 80.0 + i * 4.0));
+    float fly = smoothstep(0.008, 0.0, length(uv - vec2(flyX, flyY)));
+    col += vec3(0.8, 1.0, 0.4) * fly * blink;
+  }
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Nocturnes', desc: 'Dark atmospheric night' });
+
+register('meadow', `
+// After Dark Meadow - peaceful meadow scene
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time;
+  vec3 col = mix(vec3(0.5, 0.7, 0.95), vec3(0.3, 0.5, 0.8), uv.y);
+
+  // Sun
+  vec2 sunPos = vec2(0.85, 0.85);
+  float sun = smoothstep(0.07, 0.05, length(uv - sunPos));
+  col += vec3(1.0, 0.95, 0.7) * sun;
+
+  // Grass
+  if (uv.y < 0.35) {
+    col = mix(vec3(0.3, 0.6, 0.2), vec3(0.2, 0.5, 0.15), uv.y * 3.0);
+  }
+
+  // Flowers
+  for (float i = 0.0; i < 20.0; i++) {
+    vec2 flowerPos = vec2(hash(vec2(i, 40.0)), hash(vec2(i, 41.0)) * 0.25 + 0.05);
+    vec3 flowerCol = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + i);
+    float flower = smoothstep(0.015, 0.01, length(uv - flowerPos));
+    col = mix(col, flowerCol, flower);
+  }
+
+  // Butterflies
+  for (float i = 0.0; i < 4.0; i++) {
+    float bflyT = t + i * 1.5;
+    vec2 bflyPos = vec2(0.3 + sin(bflyT * 0.5 + i) * 0.3, 0.25 + sin(bflyT * 0.7 + i * 2.0) * 0.1);
+    float wingFlap = sin(t * 15.0 + i * 3.0) * 0.3 + 0.7;
+    vec2 wing1 = bflyPos + vec2(-0.015 * wingFlap, 0.005);
+    vec2 wing2 = bflyPos + vec2(0.015 * wingFlap, 0.005);
+    float wings = smoothstep(0.012, 0.008, length((uv - wing1) * vec2(0.8, 1.2)));
+    wings += smoothstep(0.012, 0.008, length((uv - wing2) * vec2(0.8, 1.2)));
+    vec3 bflyCol = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + i * 2.0);
+    col = mix(col, bflyCol, wings);
+  }
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Meadow', desc: 'Peaceful animated meadow' });
+
+register('aquaticrealm', `
+// After Dark Aquatic Realm - underwater scene
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time;
+  vec3 col = mix(vec3(0.0, 0.1, 0.25), vec3(0.0, 0.03, 0.1), uv.y);
+
+  // Caustics
+  vec2 causticUv = uv * 5.0 + vec2(t * 0.2, t * 0.1);
+  float caustic = sin(causticUv.x + sin(causticUv.y * 2.0)) * sin(causticUv.y + sin(causticUv.x * 2.0));
+  col += vec3(0.1, 0.15, 0.2) * smoothstep(0.3, 0.8, caustic) * 0.2 * (1.0 - uv.y);
+
+  // Sandy bottom
+  if (uv.y < 0.15) {
+    float sand = smoothstep(0.15, 0.05, uv.y);
+    col = mix(col, vec3(0.5, 0.4, 0.3) + hash(floor(uv * 300.0)) * 0.1, sand);
+  }
+
+  // Fish
+  for (float i = 0.0; i < 8.0; i++) {
+    float fishX = fract(t * 0.08 + hash(vec2(i, 0.0)));
+    float fishY = 0.3 + hash(vec2(i, 1.0)) * 0.4;
+    fishY += sin(t * 3.0 + i) * 0.02;
+    vec2 fishPos = vec2(fishX, fishY);
+    vec2 toFish = uv - fishPos;
+    float fish = length(toFish * vec2(1.0, 2.5)) - 0.015;
+    fish = smoothstep(0.005, 0.0, fish);
+    vec3 fishCol = 0.5 + 0.5 * cos(vec3(0.0, 1.0, 2.0) + i * 2.0);
+    col = mix(col, fishCol, fish);
+  }
+
+  // Bubbles
+  for (float i = 0.0; i < 15.0; i++) {
+    float bubbleX = hash(vec2(i, 70.0));
+    float bubbleY = fract(hash(vec2(i, 72.0)) + t * (0.08 + hash(vec2(i, 71.0)) * 0.08));
+    float bubbleSize = 0.004 + hash(vec2(i, 73.0)) * 0.008;
+    vec2 bubblePos = vec2(bubbleX + sin(bubbleY * 8.0 + t) * 0.02, bubbleY);
+    float bubble = smoothstep(bubbleSize, bubbleSize * 0.6, length(uv - bubblePos));
+    col += vec3(0.3, 0.4, 0.5) * bubble * 0.4;
+  }
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Aquatic Realm', desc: 'Underwater fish scene' });
+
+// ============================================================================
+// OS/2 WARP
+// ============================================================================
+
+register('flyingos2', `
+// OS/2 Warp Flying Logos
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.0);
+  float t = u_time;
+
+  // Flying OS/2 logos
+  for (float i = 0.0; i < 25.0; i++) {
+    float z = fract(hash(vec2(i, 0.0)) - t * 0.2);
+    vec2 pos = vec2((hash(vec2(i, 1.0)) - 0.5) * 2.0, (hash(vec2(i, 2.0)) - 0.5) * 1.5) / (z + 0.1);
+    float size = 0.05 / (z + 0.1);
+    vec2 logoUv = (uv - pos) / size;
+
+    // Simplified OS/2 shape
+    float logo = smoothstep(0.05, 0.0, abs(length(logoUv + vec2(0.3, 0.0)) - 0.2));
+    logo += smoothstep(0.05, 0.0, abs(logoUv.x - 0.2) + abs(logoUv.y) - 0.25);
+
+    vec3 logoCol = mix(vec3(0.0, 0.3, 0.8), vec3(0.8, 0.2, 0.2), logoUv.x * 0.5 + 0.5);
+    col += logoCol * logo * z;
+  }
+
+  // Stars
+  for (float i = 0.0; i < 50.0; i++) {
+    float z = fract(hash(vec2(i + 100.0, 0.0)) - t * 0.3);
+    vec2 pos = vec2((hash(vec2(i + 100.0, 1.0)) - 0.5) * 2.5, (hash(vec2(i + 100.0, 2.0)) - 0.5) * 2.0) / (z + 0.1);
+    col += vec3(1.0) * smoothstep(0.01 / z, 0.0, length(uv - pos)) * z;
+  }
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Flying OS/2', desc: 'OS/2 logos in space' });
+
+// ============================================================================
+// AMIGA
+// ============================================================================
+
+register('amigaball', `
+// Amiga Boing Ball - iconic checkered bouncing ball
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.5, 0.5, 0.6);
+  float t = u_time;
+
+  // Grid background
+  vec2 gridUv = uv * 10.0;
+  float grid = smoothstep(0.1, 0.0, abs(fract(gridUv.x) - 0.5));
+  grid += smoothstep(0.1, 0.0, abs(fract(gridUv.y) - 0.5));
+  col = mix(col, vec3(0.4, 0.4, 0.5), grid * 0.3 * smoothstep(0.8, 0.2, length(uv)));
+
+  // Ball bouncing
+  float bounceX = sin(t * 1.5) * 0.3;
+  float bounceY = abs(sin(t * 2.5)) * 0.25 - 0.1;
+  float squash = 1.0 - smoothstep(0.0, 0.1, bounceY + 0.1) * 0.2;
+  vec2 ballPos = vec2(bounceX, bounceY);
+  float ballRadius = 0.2;
+
+  vec2 toBall = uv - ballPos;
+  float ballDist = length(toBall / vec2(1.0, squash));
+
+  if (ballDist < ballRadius) {
+    float u_s = atan(toBall.x, sqrt(max(0.0, ballRadius * ballRadius - toBall.x * toBall.x - (toBall.y / squash) * (toBall.y / squash))));
+    float v_s = asin(clamp((toBall.y / squash) / ballRadius, -1.0, 1.0));
+    u_s += t * 3.0;
+    float checker = mod(floor(u_s * 4.0 / 3.14159) + floor(v_s * 4.0 / 3.14159), 2.0);
+    vec3 ballCol = mix(vec3(1.0, 0.1, 0.1), vec3(1.0), checker);
+    vec3 normal = normalize(vec3(toBall / vec2(1.0, squash), sqrt(max(0.0, ballRadius * ballRadius - ballDist * ballDist))));
+    float shade = max(dot(normal, normalize(vec3(0.5, 0.8, 1.0))), 0.0) * 0.6 + 0.4;
+    col = ballCol * shade;
+  }
+
+  // Shadow
+  vec2 shadowPos = vec2(bounceX, -0.35);
+  float shadow = smoothstep(0.15 * (1.0 + bounceY * 0.5), 0.0, length(uv - shadowPos));
+  col *= 1.0 - shadow * 0.4;
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Amiga Ball', desc: 'Iconic checkered bouncing ball' });
+
 export default ass;

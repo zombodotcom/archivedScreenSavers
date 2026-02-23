@@ -58,7 +58,22 @@ const ERAS = {
     year: '1989-1993',
     desc: 'Berkeley Systems\' legendary collection',
     computer: 'mac-classic',
-    effects: ['toasters', 'starrynight', 'fish', 'zot', 'spotlight', 'worms', 'drain', 'warp', 'lissajous', 'rose', 'clocks', 'stringart', 'satori', 'gravity_ad', 'johnnycastaway', 'daredevildan', 'baddog', 'neon', 'dosshell', 'lunaticfringe', 'mowinman', 'messages', 'frostfire', 'underwater']
+    effects: ['toasters', 'starrynight', 'fish', 'zot', 'spotlight', 'worms', 'drain', 'warp', 'lissajous', 'rose', 'clocks', 'stringart', 'satori', 'gravity_ad', 'johnnycastaway', 'daredevildan', 'baddog', 'neon', 'dosshell', 'lunaticfringe', 'mowinman', 'messages', 'frostfire', 'underwater', 'boris', 'nocturnes', 'meadow', 'aquaticrealm']
+  },
+  os2: {
+    name: 'OS/2 Warp',
+    year: '1994-2001',
+    desc: 'IBM OS/2 operating system',
+    computer: 'pc-beige',
+    brand: 'SVGA',
+    effects: ['flyingos2', 'starfield', 'marquee']
+  },
+  amiga: {
+    name: 'Amiga',
+    year: '1985-1994',
+    desc: 'Commodore Amiga demos',
+    computer: 'mac-classic',
+    effects: ['amigaball', 'boingball', 'plasma']
   },
   kde: {
     name: 'KDE',
