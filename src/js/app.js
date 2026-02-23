@@ -223,6 +223,58 @@ const COMPUTERS = {
 // Active mini previews to clean up on navigation
 let activePreviews = [];
 
+// Swipe gesture handler for mobile navigation
+class SwipeHandler {
+  constructor(element, callbacks) {
+    this.element = element;
+    this.callbacks = callbacks;
+    this.startX = 0;
+    this.startY = 0;
+    this.startTime = 0;
+    this.threshold = 50;
+    this.maxTime = 300;
+    this.verticalThreshold = 75;
+
+    this.handleTouchStart = this.handleTouchStart.bind(this);
+    this.handleTouchEnd = this.handleTouchEnd.bind(this);
+
+    element.addEventListener('touchstart', this.handleTouchStart, { passive: true });
+    element.addEventListener('touchend', this.handleTouchEnd, { passive: true });
+  }
+
+  handleTouchStart(e) {
+    if (e.touches.length !== 1) return;
+    this.startX = e.touches[0].clientX;
+    this.startY = e.touches[0].clientY;
+    this.startTime = Date.now();
+  }
+
+  handleTouchEnd(e) {
+    if (e.changedTouches.length !== 1) return;
+
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const deltaX = endX - this.startX;
+    const deltaY = endY - this.startY;
+    const elapsed = Date.now() - this.startTime;
+
+    if (elapsed < this.maxTime &&
+        Math.abs(deltaX) > this.threshold &&
+        Math.abs(deltaY) < this.verticalThreshold) {
+      if (deltaX > 0 && this.callbacks.onSwipeRight) {
+        this.callbacks.onSwipeRight();
+      } else if (deltaX < 0 && this.callbacks.onSwipeLeft) {
+        this.callbacks.onSwipeLeft();
+      }
+    }
+  }
+
+  destroy() {
+    this.element.removeEventListener('touchstart', this.handleTouchStart);
+    this.element.removeEventListener('touchend', this.handleTouchEnd);
+  }
+}
+
 // Navigate without page reload
 function navigate(url) {
   history.pushState({}, '', url);
@@ -498,20 +550,28 @@ function renderMuseum(eraId, era) {
   const app = document.getElementById('app');
   app.innerHTML = `
     <div class="museum">
-      <aside class="sidebar">
-        <a href="/" class="back-link">← Back to Museum</a>
-        <h1>aSS</h1>
-        <div class="era-name">${era.name} (${era.year})</div>
-        <div class="effect-list" id="list"></div>
-        <div class="settings-panel" id="settings"></div>
-        <div class="controls">
-          <button id="shuffle">Shuffle</button>
-          <button id="fullscreen">Fullscreen</button>
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-toggle" id="sidebarToggle">
+          <span class="toggle-icon">▲</span>
+        </div>
+        <div class="sidebar-content">
+          <a href="/" class="back-link">← Back to Museum</a>
+          <h1>aSS</h1>
+          <div class="era-name">${era.name} (${era.year})</div>
+          <div class="effect-list" id="list"></div>
+          <div class="settings-panel" id="settings"></div>
+          <div class="controls">
+            <button id="prev" class="nav-btn">◀</button>
+            <button id="shuffle">Shuffle</button>
+            <button id="next" class="nav-btn">▶</button>
+            <button id="fullscreen">⛶</button>
+          </div>
         </div>
       </aside>
       <main class="preview">
         <canvas id="canvas"></canvas>
         <div class="status" id="status">Loading...</div>
+        <div class="swipe-hint" id="swipeHint">← Swipe to change →</div>
       </main>
     </div>
   `;
@@ -522,6 +582,37 @@ function renderMuseum(eraId, era) {
     document.getElementById('status').textContent = 'WebGL2 required';
     return;
   }
+
+  // Track current effect for navigation
+  let currentEffectIndex = 0;
+  const availableEffects = era.effects.filter(id => ass.effects[id]);
+
+  const navigateToEffect = (index) => {
+    if (availableEffects.length === 0) return;
+    index = ((index % availableEffects.length) + availableEffects.length) % availableEffects.length;
+    currentEffectIndex = index;
+    const effectId = availableEffects[index];
+    ass.play(effectId);
+    updateSelection(effectId);
+    statusEl.textContent = ass.effects[effectId]?.name || effectId;
+    buildSettingsUI(effectId);
+  };
+
+  // Swipe gesture for effect navigation on mobile
+  new SwipeHandler(canvas, {
+    onSwipeLeft: () => navigateToEffect(currentEffectIndex + 1),
+    onSwipeRight: () => navigateToEffect(currentEffectIndex - 1)
+  });
+
+  // Double-tap to toggle fullscreen on mobile
+  let lastTap = 0;
+  canvas.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTap < 300 && e.changedTouches.length === 1) {
+      document.getElementById('fullscreen').click();
+    }
+    lastTap = now;
+  });
 
   // Build effect list
   const listEl = document.getElementById('list');
@@ -603,7 +694,7 @@ function renderMuseum(eraId, era) {
     settingsEl.appendChild(resetBtn);
   }
 
-  era.effects.forEach(id => {
+  era.effects.forEach((id, index) => {
     const effect = allEffects.find(e => e.id === id);
     if (!effect) return;
 
@@ -612,6 +703,8 @@ function renderMuseum(eraId, era) {
     item.dataset.id = id;
     item.innerHTML = `<h3>${effect.name}</h3><p>${effect.desc}</p>`;
     item.onclick = () => {
+      const idx = availableEffects.indexOf(id);
+      if (idx !== -1) currentEffectIndex = idx;
       ass.play(id);
       updateSelection(id);
       statusEl.textContent = effect.name;
@@ -626,11 +719,31 @@ function renderMuseum(eraId, era) {
     });
   }
 
+  // Mobile sidebar toggle
+  const sidebar = document.getElementById('sidebar');
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const swipeHint = document.getElementById('swipeHint');
+
+  sidebarToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+  });
+
+  // Show swipe hint briefly on mobile
+  if (window.innerWidth <= 600) {
+    swipeHint.classList.add('visible');
+    setTimeout(() => swipeHint.classList.remove('visible'), 3000);
+  }
+
+  // Prev/Next buttons
+  document.getElementById('prev').onclick = () => navigateToEffect(currentEffectIndex - 1);
+  document.getElementById('next').onclick = () => navigateToEffect(currentEffectIndex + 1);
+
   // Controls
   document.getElementById('shuffle').onclick = () => {
-    const available = era.effects.filter(id => ass.effects[id]);
-    if (!available.length) return;
-    const randomId = available[Math.floor(Math.random() * available.length)];
+    if (!availableEffects.length) return;
+    const randomIndex = Math.floor(Math.random() * availableEffects.length);
+    currentEffectIndex = randomIndex;
+    const randomId = availableEffects[randomIndex];
     ass.play(randomId);
     updateSelection(randomId);
     statusEl.textContent = ass.effects[randomId]?.name || randomId;
@@ -638,8 +751,16 @@ function renderMuseum(eraId, era) {
   };
 
   document.getElementById('fullscreen').onclick = () => {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else canvas.requestFullscreen();
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      const preview = document.querySelector('.preview');
+      if (preview.requestFullscreen) {
+        preview.requestFullscreen();
+      } else if (preview.webkitRequestFullscreen) {
+        preview.webkitRequestFullscreen();
+      }
+    }
   };
 
   // Start with first available effect

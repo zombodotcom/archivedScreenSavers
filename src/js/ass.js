@@ -82,6 +82,36 @@ class ASS {
 
     this.resize();
     window.addEventListener('resize', () => this.resize());
+
+    // Initialize mouse/touch tracking for u_mouse uniform
+    this.mouseX = 0;
+    this.mouseY = 0;
+
+    const updatePointer = (clientX, clientY) => {
+      const rect = this.canvas.getBoundingClientRect();
+      // Normalize to canvas coordinates (Y flipped for WebGL)
+      this.mouseX = ((clientX - rect.left) / rect.width) * this.canvas.width;
+      this.mouseY = ((rect.height - (clientY - rect.top)) / rect.height) * this.canvas.height;
+    };
+
+    // Mouse events (desktop)
+    this.canvas.addEventListener('mousemove', (e) => {
+      updatePointer(e.clientX, e.clientY);
+    });
+
+    // Touch events (mobile) - passive for scroll performance
+    this.canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        updatePointer(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1) {
+        updatePointer(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
     return true;
   }
 
