@@ -23,7 +23,7 @@ const ERAS = {
     desc: 'Golden age of OpenGL screensavers',
     computer: 'pc-beige',
     brand: 'SVGA',
-    effects: ['pipes', 'maze', 'flowerbox', 'flyingobjects', 'text3d', 'beziers', 'mystify', 'starfield']
+    effects: ['pipes', 'maze', 'flowerbox', 'flyingobjects', 'text3d', 'beziers', 'mystify', 'starfield', 'curvescolors', 'channels']
   },
   winxp: {
     name: 'Windows XP',
@@ -38,7 +38,7 @@ const ERAS = {
     year: '2007-2009',
     desc: 'DWM-powered Aero era',
     computer: 'pc-vista',
-    effects: ['bubbles', 'ribbons', 'aurora', 'mystify', 'windowsenergy']
+    effects: ['bubbles', 'ribbons', 'aurora', 'mystify', 'windowsenergy', 'windowslogo']
   },
   macclassic: {
     name: 'Classic Mac',
@@ -52,7 +52,7 @@ const ERAS = {
     year: '2001-present',
     desc: 'Flurry, Arabesque, and Apple elegance',
     computer: 'imac-g3',
-    effects: ['flurry', 'arabesque', 'shell', 'drift', 'hello']
+    effects: ['flurry', 'arabesque', 'shell', 'drift', 'hello', 'abstract', 'cosmos', 'kenburns', 'floating', 'mosaic', 'albumart', 'reflections', 'wordofday', 'rssvisualizer', 'aerial', 'photomobile', 'vintageprints']
   },
   linux: {
     name: 'XScreenSaver',
@@ -73,7 +73,7 @@ const ERAS = {
     year: '1989-1993',
     desc: 'Berkeley Systems\' legendary collection',
     computer: 'mac-classic',
-    effects: ['toasters', 'starrynight', 'fish', 'zot', 'spotlight', 'worms', 'drain', 'warp', 'lissajous', 'rose', 'clocks', 'stringart', 'satori', 'gravity_ad', 'johnnycastaway', 'daredevildan', 'baddog', 'neon', 'dosshell', 'lunaticfringe', 'mowinman', 'messages', 'frostfire', 'underwater', 'boris', 'nocturnes', 'meadow', 'aquaticrealm']
+    effects: ['toasters', 'starrynight', 'fish', 'zot', 'spotlight', 'worms', 'drain', 'warp', 'lissajous', 'rose', 'clocks', 'stringart', 'satori', 'gravity_ad', 'johnnycastaway', 'daredevildan', 'baddog', 'neon', 'dosshell', 'lunaticfringe', 'mowinman', 'messages', 'frostfire', 'underwater', 'boris', 'nocturnes', 'meadow', 'aquaticrealm', 'toasterspro']
   },
   os2: {
     name: 'OS/2 Warp',
@@ -110,7 +110,7 @@ const ERAS = {
     desc: 'Windows add-on pack screensavers',
     computer: 'pc-beige',
     brand: 'SVGA',
-    effects: ['underwater', 'insidecomputer', 'dangerousCreatures']
+    effects: ['underwater', 'insidecomputer', 'dangerousCreatures', 'jazz', 'organicart', 'baseball', 'garfield']
   },
   originals: {
     name: 'aSS Originals',

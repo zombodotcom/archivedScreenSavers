@@ -5660,4 +5660,1656 @@ void main() {
   fragColor = vec4(col, 1.0);
 }`, { name: 'Dangerous Creatures', desc: 'Plus! nature scenes' });
 
+// ============================================================================
+// BATCH 1: MIXED CLASSICS - Mac OS X & Windows
+// ============================================================================
+
+register('abstract', `
+// Mac OS X Abstract screensaver - flowing organic color blobs
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec2 center = uv - 0.5;
+
+  float t = u_time * 0.3;
+  vec3 col = vec3(0.0);
+
+  // Multiple flowing color blobs
+  for (float i = 0.0; i < 6.0; i++) {
+    float phase = i * 1.047; // 60 degrees apart
+
+    // Blob center moves in smooth Lissajous pattern
+    vec2 blobCenter = vec2(
+      sin(t + phase) * 0.3 + sin(t * 0.7 + phase * 2.0) * 0.2,
+      cos(t * 0.8 + phase) * 0.3 + cos(t * 0.6 + phase * 1.5) * 0.2
+    );
+
+    float d = length(center - blobCenter);
+
+    // Soft blob falloff
+    float blob = exp(-d * d * 8.0);
+
+    // Each blob has a different hue that shifts over time
+    float hue = fract(i / 6.0 + t * 0.05);
+    vec3 blobCol = vec3(
+      0.5 + 0.5 * sin(hue * 6.28),
+      0.5 + 0.5 * sin(hue * 6.28 + 2.09),
+      0.5 + 0.5 * sin(hue * 6.28 + 4.18)
+    );
+
+    // Saturated, rich colors like Mac OS X
+    blobCol = pow(blobCol, vec3(0.7));
+
+    col += blobCol * blob * 0.6;
+  }
+
+  // Add subtle glow and color blending
+  col = 1.0 - exp(-col * 1.5);
+
+  // Smooth color transitions
+  col = smoothstep(0.0, 1.0, col);
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Abstract', desc: 'Mac OS X flowing colors' });
+
+register('curvescolors', `
+// Windows 95 Curves and Colors - abstract bezier curves
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec3 col = vec3(0.0);
+
+  float t = u_time * 0.4;
+
+  // Multiple colored bezier curves
+  for (float i = 0.0; i < 8.0; i++) {
+    float offset = i * 0.785; // 45 degrees
+
+    // Control points move in circular patterns
+    vec2 p0 = vec2(
+      0.5 + sin(t + offset) * 0.4,
+      0.5 + cos(t * 0.7 + offset) * 0.4
+    );
+    vec2 p1 = vec2(
+      0.5 + sin(t * 1.3 + offset + 1.0) * 0.3,
+      0.5 + cos(t * 0.9 + offset + 1.5) * 0.3
+    );
+    vec2 p2 = vec2(
+      0.5 + sin(t * 0.8 + offset + 2.5) * 0.4,
+      0.5 + cos(t * 1.1 + offset + 3.0) * 0.4
+    );
+
+    // Draw bezier curve as series of points
+    float minDist = 1.0;
+    for (float j = 0.0; j < 20.0; j++) {
+      float s = j / 19.0;
+      // Quadratic bezier
+      vec2 curvePoint = (1.0-s)*(1.0-s)*p0 + 2.0*(1.0-s)*s*p1 + s*s*p2;
+      minDist = min(minDist, length(uv - curvePoint));
+    }
+
+    // Windows 95 bright colors
+    vec3 curveCol;
+    float hue = fract(i / 8.0 + t * 0.05);
+    if (hue < 0.166) curveCol = vec3(1.0, 0.0, 0.0);      // Red
+    else if (hue < 0.333) curveCol = vec3(1.0, 1.0, 0.0); // Yellow
+    else if (hue < 0.5) curveCol = vec3(0.0, 1.0, 0.0);   // Green
+    else if (hue < 0.666) curveCol = vec3(0.0, 1.0, 1.0); // Cyan
+    else if (hue < 0.833) curveCol = vec3(0.0, 0.0, 1.0); // Blue
+    else curveCol = vec3(1.0, 0.0, 1.0);                   // Magenta
+
+    // Curve line with glow
+    float curve = smoothstep(0.02, 0.005, minDist);
+    col += curveCol * curve * 0.7;
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Curves & Colors', desc: 'Windows 95 abstract curves' });
+
+register('cosmos', `
+// Mac OS X Cosmos - space imagery with nebulae and stars
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec2 center = uv - 0.5;
+
+  float t = u_time * 0.1;
+  vec3 col = vec3(0.0);
+
+  // Deep space background gradient
+  col = mix(vec3(0.0, 0.0, 0.05), vec3(0.05, 0.0, 0.1), uv.y);
+
+  // Nebula clouds using layered noise
+  for (float layer = 0.0; layer < 3.0; layer++) {
+    float scale = 3.0 + layer * 2.0;
+    vec2 nebUV = center * scale + vec2(t * (0.1 + layer * 0.05), t * 0.08);
+
+    float neb = 0.0;
+    float amp = 0.5;
+    for (float oct = 0.0; oct < 4.0; oct++) {
+      vec2 p = nebUV * pow(2.0, oct);
+      neb += (sin(p.x + sin(p.y * 2.0)) * cos(p.y + cos(p.x * 1.5)) * 0.5 + 0.5) * amp;
+      amp *= 0.5;
+    }
+
+    // Color each layer differently (like real nebulae)
+    vec3 nebCol;
+    if (layer < 1.0) nebCol = vec3(0.4, 0.1, 0.5);      // Purple
+    else if (layer < 2.0) nebCol = vec3(0.1, 0.3, 0.5); // Blue
+    else nebCol = vec3(0.5, 0.2, 0.3);                   // Pink/red
+
+    col += nebCol * neb * 0.3;
+  }
+
+  // Stars - multiple layers for depth
+  for (float layer = 0.0; layer < 3.0; layer++) {
+    for (float i = 0.0; i < 50.0; i++) {
+      vec2 starPos = vec2(
+        fract(hash(vec2(i + layer * 100.0, 0.0)) + t * 0.02 * (layer + 1.0)),
+        hash(vec2(i + layer * 100.0, 1.0))
+      );
+
+      float d = length(uv - starPos);
+      float size = hash(vec2(i + layer * 100.0, 2.0)) * 0.003 + 0.001;
+      float twinkle = sin(t * 5.0 + i * 10.0) * 0.3 + 0.7;
+
+      // Star with glow
+      float star = smoothstep(size, 0.0, d) * twinkle;
+
+      // Some stars are colored
+      vec3 starCol = vec3(1.0);
+      if (hash(vec2(i, 3.0)) > 0.7) {
+        starCol = mix(vec3(1.0, 0.8, 0.6), vec3(0.6, 0.8, 1.0), hash(vec2(i, 4.0)));
+      }
+
+      col += starCol * star * (1.0 - layer * 0.2);
+    }
+  }
+
+  // Occasional shooting star
+  float shootTime = fract(t * 0.3);
+  if (shootTime < 0.1) {
+    vec2 shootStart = vec2(hash(vec2(floor(t * 0.3), 0.0)), 0.8 + hash(vec2(floor(t * 0.3), 1.0)) * 0.15);
+    vec2 shootEnd = shootStart + vec2(0.3, -0.2);
+    vec2 shootPos = mix(shootStart, shootEnd, shootTime * 10.0);
+
+    float shootDist = length(uv - shootPos);
+    col += vec3(1.0) * smoothstep(0.01, 0.0, shootDist) * (1.0 - shootTime * 10.0);
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Cosmos', desc: 'Mac OS X space imagery' });
+
+register('windowslogo', `
+// Windows Vista animated flag logo
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec2 center = (uv - 0.5) * 2.0;
+
+  float t = u_time * 0.5;
+  vec3 col = vec3(0.0);
+
+  // Dark gradient background (Vista style)
+  col = mix(vec3(0.0, 0.02, 0.08), vec3(0.0, 0.05, 0.15), uv.y);
+
+  // Windows logo position
+  vec2 logoCenter = vec2(0.0, 0.0);
+  vec2 logoUV = center - logoCenter;
+
+  // Scale for the logo
+  float scale = 0.6;
+  logoUV /= scale;
+
+  // Wave/flag animation
+  float wave = sin(logoUV.x * 3.0 - t * 2.0) * 0.1 * (1.0 - abs(logoUV.x));
+  logoUV.y -= wave;
+
+  // Perspective tilt (Vista style)
+  logoUV.y *= 1.0 + logoUV.x * 0.15;
+
+  // Four quadrants of Windows logo
+  float gap = 0.05;
+  float quadSize = 0.35;
+
+  // Top-left (red/orange)
+  vec2 q1 = logoUV - vec2(-quadSize/2.0 - gap, quadSize/2.0 + gap);
+  if (abs(q1.x) < quadSize/2.0 && abs(q1.y) < quadSize/2.0) {
+    float edge = smoothstep(quadSize/2.0, quadSize/2.0 - 0.02, max(abs(q1.x), abs(q1.y)));
+    col = mix(col, vec3(0.95, 0.35, 0.15), edge);
+  }
+
+  // Top-right (green)
+  vec2 q2 = logoUV - vec2(quadSize/2.0 + gap, quadSize/2.0 + gap);
+  if (abs(q2.x) < quadSize/2.0 && abs(q2.y) < quadSize/2.0) {
+    float edge = smoothstep(quadSize/2.0, quadSize/2.0 - 0.02, max(abs(q2.x), abs(q2.y)));
+    col = mix(col, vec3(0.45, 0.75, 0.15), edge);
+  }
+
+  // Bottom-left (blue)
+  vec2 q3 = logoUV - vec2(-quadSize/2.0 - gap, -quadSize/2.0 - gap);
+  if (abs(q3.x) < quadSize/2.0 && abs(q3.y) < quadSize/2.0) {
+    float edge = smoothstep(quadSize/2.0, quadSize/2.0 - 0.02, max(abs(q3.x), abs(q3.y)));
+    col = mix(col, vec3(0.15, 0.55, 0.9), edge);
+  }
+
+  // Bottom-right (yellow)
+  vec2 q4 = logoUV - vec2(quadSize/2.0 + gap, -quadSize/2.0 - gap);
+  if (abs(q4.x) < quadSize/2.0 && abs(q4.y) < quadSize/2.0) {
+    float edge = smoothstep(quadSize/2.0, quadSize/2.0 - 0.02, max(abs(q4.x), abs(q4.y)));
+    col = mix(col, vec3(0.95, 0.75, 0.15), edge);
+  }
+
+  // Glow effect
+  float logoDist = length(logoUV);
+  col += vec3(0.1, 0.2, 0.4) * exp(-logoDist * logoDist * 2.0) * 0.5;
+
+  // Subtle light rays
+  float angle = atan(center.y, center.x);
+  float rays = sin(angle * 8.0 + t) * 0.5 + 0.5;
+  col += vec3(0.05, 0.1, 0.2) * rays * exp(-length(center) * 2.0) * 0.3;
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Windows Logo', desc: 'Vista animated flag' });
+
+register('kenburns', `
+// Mac OS X Ken Burns effect - slow pan and zoom on abstract art
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+
+  float t = u_time * 0.1;
+
+  // Each "photo" is shown for about 10 seconds
+  float photoIndex = floor(t);
+  float photoProgress = fract(t);
+
+  // Ken Burns: slow zoom and pan
+  float startZoom = 1.0 + hash(vec2(photoIndex, 0.0)) * 0.3;
+  float endZoom = 1.2 + hash(vec2(photoIndex, 1.0)) * 0.3;
+  float zoom = mix(startZoom, endZoom, photoProgress);
+
+  vec2 startPan = (vec2(hash(vec2(photoIndex, 2.0)), hash(vec2(photoIndex, 3.0))) - 0.5) * 0.3;
+  vec2 endPan = (vec2(hash(vec2(photoIndex, 4.0)), hash(vec2(photoIndex, 5.0))) - 0.5) * 0.3;
+  vec2 pan = mix(startPan, endPan, photoProgress);
+
+  // Apply Ken Burns transform
+  vec2 transformedUV = (uv - 0.5) / zoom + 0.5 + pan;
+
+  // Generate abstract "landscape" or "photo" for each index
+  vec3 col = vec3(0.0);
+
+  float photoType = hash(vec2(photoIndex, 10.0));
+
+  if (photoType < 0.33) {
+    // Sunset/landscape style
+    float sky = smoothstep(0.3, 0.7, transformedUV.y);
+    vec3 skyCol = mix(vec3(0.9, 0.4, 0.2), vec3(0.3, 0.1, 0.4), sky);
+
+    // Sun
+    vec2 sunPos = vec2(0.3 + hash(vec2(photoIndex, 11.0)) * 0.4, 0.5);
+    float sun = smoothstep(0.15, 0.1, length(transformedUV - sunPos));
+    skyCol = mix(skyCol, vec3(1.0, 0.9, 0.5), sun);
+
+    // Mountains silhouette
+    float mountain = 0.3 + sin(transformedUV.x * 5.0 + photoIndex) * 0.1 + sin(transformedUV.x * 12.0) * 0.05;
+    if (transformedUV.y < mountain) {
+      skyCol = vec3(0.05, 0.05, 0.1);
+    }
+
+    col = skyCol;
+
+  } else if (photoType < 0.66) {
+    // Ocean/beach style
+    float horizon = 0.45;
+    if (transformedUV.y > horizon) {
+      // Sky gradient
+      col = mix(vec3(0.6, 0.8, 1.0), vec3(0.3, 0.5, 0.9), (transformedUV.y - horizon) * 2.0);
+    } else {
+      // Water
+      float wave = sin(transformedUV.x * 30.0 + u_time) * 0.01;
+      col = mix(vec3(0.1, 0.3, 0.5), vec3(0.2, 0.5, 0.7), transformedUV.y / horizon + wave);
+    }
+
+  } else {
+    // Forest/nature style
+    col = mix(vec3(0.1, 0.3, 0.1), vec3(0.2, 0.5, 0.2), transformedUV.y);
+
+    // Trees
+    for (float i = 0.0; i < 5.0; i++) {
+      float treeX = hash(vec2(photoIndex, 20.0 + i)) * 0.8 + 0.1;
+      float treeHeight = 0.3 + hash(vec2(photoIndex, 30.0 + i)) * 0.3;
+      float treeWidth = 0.05 + hash(vec2(photoIndex, 40.0 + i)) * 0.05;
+
+      float treeDist = abs(transformedUV.x - treeX);
+      float treeShape = smoothstep(treeWidth, 0.0, treeDist) * step(transformedUV.y, treeHeight);
+      col = mix(col, vec3(0.05, 0.15, 0.05), treeShape);
+    }
+  }
+
+  // Fade transitions between photos
+  float fadeIn = smoothstep(0.0, 0.1, photoProgress);
+  float fadeOut = smoothstep(1.0, 0.9, photoProgress);
+  col *= fadeIn * fadeOut;
+
+  // Vignette
+  float vignette = 1.0 - length((uv - 0.5) * 1.2);
+  col *= smoothstep(0.0, 0.5, vignette);
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Ken Burns', desc: 'Mac slow pan and zoom' });
+
+// ============================================================================
+// BATCH 2: MORE MIXED CLASSICS - Mac & Windows Plus!
+// ============================================================================
+
+register('floating', `
+// Mac OS X Floating - objects drifting peacefully
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float aspect = u_resolution.x / u_resolution.y;
+  vec2 center = (uv - 0.5) * vec2(aspect, 1.0);
+
+  float t = u_time * 0.2;
+  vec3 col = vec3(0.02, 0.03, 0.08); // Dark blue background
+
+  // Floating shapes
+  for (float i = 0.0; i < 12.0; i++) {
+    float seed = i * 17.3;
+
+    // Slow, peaceful movement
+    vec2 pos = vec2(
+      sin(t * 0.3 + seed) * 0.6 + sin(t * 0.17 + seed * 2.0) * 0.3,
+      sin(t * 0.23 + seed * 0.7) * 0.4 + cos(t * 0.13 + seed) * 0.2
+    );
+
+    // Slow rotation
+    float rot = t * 0.1 + seed;
+
+    vec2 toShape = center - pos;
+    float c = cos(rot), s = sin(rot);
+    toShape = vec2(c * toShape.x - s * toShape.y, s * toShape.x + c * toShape.y);
+
+    // Different shapes
+    float shape = 0.0;
+    float shapeType = fract(seed * 0.17);
+
+    if (shapeType < 0.33) {
+      // Rounded square
+      vec2 q = abs(toShape) - vec2(0.08);
+      shape = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - 0.02;
+    } else if (shapeType < 0.66) {
+      // Circle
+      shape = length(toShape) - 0.07;
+    } else {
+      // Triangle
+      vec2 p = toShape * 10.0;
+      float k = sqrt(3.0);
+      p.x = abs(p.x) - 0.8;
+      p.y = p.y + 0.8/k;
+      if(p.x + k*p.y > 0.0) p = vec2(p.x - k*p.y, -k*p.x - p.y)/2.0;
+      p.x -= clamp(p.x, -1.6, 0.0);
+      shape = -length(p) * sign(p.y) / 10.0 + 0.02;
+    }
+
+    // Soft edges
+    float alpha = smoothstep(0.02, -0.02, shape);
+
+    // Color based on index
+    vec3 shapeCol = vec3(
+      0.4 + 0.4 * sin(seed),
+      0.4 + 0.4 * sin(seed + 2.0),
+      0.4 + 0.4 * sin(seed + 4.0)
+    );
+
+    // Depth fade
+    float depth = 0.5 + 0.5 * sin(seed * 3.0);
+    alpha *= depth;
+
+    col = mix(col, shapeCol, alpha * 0.7);
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Floating', desc: 'Mac drifting shapes' });
+
+register('jazz', `
+// Windows Plus! 98 Jazz - dancing musical notes
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float aspect = u_resolution.x / u_resolution.y;
+
+  float t = u_time;
+  vec3 col = vec3(0.05, 0.0, 0.1); // Dark purple background
+
+  // Musical staff lines
+  for (float i = 0.0; i < 5.0; i++) {
+    float lineY = 0.35 + i * 0.075;
+    float line = smoothstep(0.002, 0.0, abs(uv.y - lineY));
+    col += vec3(0.15, 0.1, 0.2) * line;
+  }
+
+  // Dancing musical notes
+  for (float i = 0.0; i < 8.0; i++) {
+    float seed = i * 13.7;
+
+    // Note bounces and sways
+    float noteX = fract(i / 8.0 + t * 0.1) * 1.2 - 0.1;
+    float bounce = abs(sin(t * 3.0 + seed)) * 0.15;
+    float noteY = 0.4 + sin(noteX * 6.28 + seed) * 0.1 + bounce;
+
+    // Note rotation (dancing)
+    float noteRot = sin(t * 4.0 + seed) * 0.3;
+
+    vec2 notePos = vec2(noteX, noteY);
+    vec2 toNote = (uv - notePos);
+    toNote.x *= aspect;
+
+    // Rotate
+    float c = cos(noteRot), s = sin(noteRot);
+    toNote = vec2(c * toNote.x - s * toNote.y, s * toNote.x + c * toNote.y);
+
+    // Draw note head (oval)
+    float headSize = 0.025;
+    vec2 headPos = toNote * vec2(1.0, 1.5);
+    float head = smoothstep(headSize, headSize - 0.005, length(headPos));
+
+    // Draw stem
+    float stem = smoothstep(0.004, 0.0, abs(toNote.x - headSize * 0.7));
+    stem *= step(0.0, toNote.y) * step(toNote.y, 0.08);
+
+    // Draw flag
+    float flag = 0.0;
+    if (toNote.y > 0.05 && toNote.y < 0.08) {
+      float flagX = toNote.x - headSize * 0.7;
+      flag = smoothstep(0.0, 0.03, flagX) * smoothstep(0.04, 0.02, flagX);
+    }
+
+    float note = max(head, max(stem, flag));
+
+    // Note colors (jazz colors)
+    vec3 noteCol;
+    float hue = fract(i / 8.0 + t * 0.05);
+    if (hue < 0.2) noteCol = vec3(1.0, 0.3, 0.5);       // Pink
+    else if (hue < 0.4) noteCol = vec3(0.3, 0.7, 1.0); // Blue
+    else if (hue < 0.6) noteCol = vec3(1.0, 0.8, 0.2); // Gold
+    else if (hue < 0.8) noteCol = vec3(0.5, 1.0, 0.5); // Green
+    else noteCol = vec3(0.8, 0.4, 1.0);                 // Purple
+
+    col += noteCol * note;
+  }
+
+  // Sparkles
+  for (float i = 0.0; i < 20.0; i++) {
+    vec2 sparkPos = vec2(
+      fract(hash(vec2(i, 0.0)) + t * 0.15),
+      hash(vec2(i, 1.0))
+    );
+    float sparkle = smoothstep(0.01, 0.0, length(uv - sparkPos));
+    sparkle *= sin(t * 10.0 + i * 5.0) * 0.5 + 0.5;
+    col += vec3(1.0, 0.9, 0.5) * sparkle;
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Jazz', desc: 'Plus! 98 dancing notes' });
+
+register('mosaic', `
+// Mac OS X Mosaic - tile arrangement animation
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time * 0.3;
+
+  vec3 col = vec3(0.0);
+
+  // Grid of tiles
+  float gridSize = 8.0;
+  vec2 tileCoord = floor(uv * gridSize);
+  vec2 tileUV = fract(uv * gridSize);
+
+  // Each tile has unique animation timing
+  float tileId = tileCoord.x + tileCoord.y * gridSize;
+  float tilePhase = hash(vec2(tileId, 0.0)) * 6.28;
+
+  // Tile flip animation
+  float flipTime = fract(t * 0.2 + tilePhase);
+  float flipAngle = flipTime < 0.5 ? flipTime * 2.0 * 3.14159 : 0.0;
+
+  // Color cycles between two states
+  float colorState = floor(t * 0.2 + tilePhase);
+  vec3 color1 = vec3(
+    0.3 + 0.7 * hash(vec2(tileId + colorState, 1.0)),
+    0.3 + 0.7 * hash(vec2(tileId + colorState, 2.0)),
+    0.3 + 0.7 * hash(vec2(tileId + colorState, 3.0))
+  );
+  vec3 color2 = vec3(
+    0.3 + 0.7 * hash(vec2(tileId + colorState + 1.0, 1.0)),
+    0.3 + 0.7 * hash(vec2(tileId + colorState + 1.0, 2.0)),
+    0.3 + 0.7 * hash(vec2(tileId + colorState + 1.0, 3.0))
+  );
+
+  // 3D flip effect
+  vec2 centered = tileUV - 0.5;
+  float flip = cos(flipAngle);
+  centered.x *= abs(flip);
+
+  // Show front or back based on flip
+  vec3 tileCol = flip > 0.0 ? color1 : color2;
+
+  // Tile border
+  float border = smoothstep(0.48, 0.45, max(abs(centered.x), abs(centered.y)));
+
+  // 3D shading
+  float shade = 0.8 + 0.2 * flip;
+
+  col = tileCol * border * shade;
+
+  // Gap between tiles
+  float gap = smoothstep(0.02, 0.05, min(tileUV.x, tileUV.y));
+  gap *= smoothstep(0.02, 0.05, min(1.0 - tileUV.x, 1.0 - tileUV.y));
+
+  col *= gap;
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Mosaic', desc: 'Mac tile animation' });
+
+register('organicart', `
+// Windows Plus! 98 Organic Art - biological patterns
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec2 center = uv - 0.5;
+
+  float t = u_time * 0.15;
+  vec3 col = vec3(0.0);
+
+  // Organic blob using metaballs
+  float field = 0.0;
+
+  for (float i = 0.0; i < 6.0; i++) {
+    float phase = i * 1.047;
+
+    // Organic movement
+    vec2 blobPos = vec2(
+      sin(t + phase) * 0.25 + sin(t * 1.7 + phase * 2.0) * 0.1,
+      cos(t * 0.8 + phase) * 0.25 + cos(t * 1.3 + phase * 1.5) * 0.1
+    );
+
+    float d = length(center - blobPos);
+    float size = 0.1 + 0.05 * sin(t + i);
+
+    // Metaball contribution
+    field += size / (d + 0.01);
+  }
+
+  // Threshold for organic boundary
+  float organic = smoothstep(2.0, 2.5, field);
+
+  // Inner patterns (cell-like)
+  float cells = 0.0;
+  for (float i = 0.0; i < 20.0; i++) {
+    vec2 cellCenter = vec2(
+      hash(vec2(i, 0.0)) - 0.5,
+      hash(vec2(i, 1.0)) - 0.5
+    );
+    cellCenter += vec2(sin(t + i), cos(t * 0.7 + i)) * 0.1;
+
+    float cellDist = length(center - cellCenter);
+    cells = max(cells, smoothstep(0.08, 0.06, cellDist));
+  }
+
+  // Color gradient based on position
+  vec3 organicCol = mix(
+    vec3(0.2, 0.6, 0.3),  // Green
+    vec3(0.8, 0.5, 0.2),  // Orange
+    sin(atan(center.y, center.x) + t) * 0.5 + 0.5
+  );
+
+  // Add purple tones
+  organicCol = mix(organicCol, vec3(0.5, 0.2, 0.6), field * 0.1);
+
+  // Cell membrane effect
+  float membrane = smoothstep(2.3, 2.5, field) - smoothstep(2.5, 2.7, field);
+
+  col = organicCol * organic;
+  col += vec3(0.9, 0.95, 0.8) * membrane * 0.5;
+  col += vec3(0.3, 0.4, 0.2) * cells * organic * 0.3;
+
+  // Background gradient
+  vec3 bg = mix(vec3(0.0, 0.05, 0.1), vec3(0.05, 0.0, 0.1), uv.y);
+  col = mix(bg, col, organic);
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Organic Art', desc: 'Plus! 98 biological' });
+
+register('albumart', `
+// Mac OS X Album Artwork - grid of album covers
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time * 0.1;
+
+  // Slow scrolling grid
+  vec2 scrollUV = uv + vec2(t * 0.05, sin(t * 0.1) * 0.02);
+
+  // Grid of albums
+  float gridSize = 4.0;
+  vec2 albumCoord = floor(scrollUV * gridSize);
+  vec2 albumUV = fract(scrollUV * gridSize);
+
+  // Each album has unique "artwork" based on its ID
+  float albumId = albumCoord.x + albumCoord.y * 100.0;
+
+  // Generate abstract album art
+  vec3 col = vec3(0.0);
+
+  // Base color for this album
+  vec3 baseCol = vec3(
+    hash(vec2(albumId, 0.0)),
+    hash(vec2(albumId, 1.0)),
+    hash(vec2(albumId, 2.0))
+  );
+
+  // Saturate the color
+  baseCol = normalize(baseCol + 0.1) * 0.8;
+
+  // Album art pattern based on ID
+  float pattern = hash(vec2(albumId, 3.0));
+
+  if (pattern < 0.25) {
+    // Gradient style
+    col = mix(baseCol, baseCol.bgr, albumUV.x);
+  } else if (pattern < 0.5) {
+    // Circle/face style
+    float circle = smoothstep(0.35, 0.3, length(albumUV - 0.5));
+    col = mix(baseCol.brg, baseCol, circle);
+  } else if (pattern < 0.75) {
+    // Stripes
+    float stripe = step(0.5, fract(albumUV.x * 4.0));
+    col = mix(baseCol, baseCol.gbr, stripe);
+  } else {
+    // Split design
+    float split = step(0.5, albumUV.y);
+    col = mix(baseCol, vec3(0.1), split);
+  }
+
+  // Album border/case
+  float border = smoothstep(0.02, 0.05, min(albumUV.x, albumUV.y));
+  border *= smoothstep(0.02, 0.05, min(1.0 - albumUV.x, 1.0 - albumUV.y));
+
+  // Subtle reflection/gloss
+  float gloss = smoothstep(0.7, 0.5, albumUV.y) * 0.1;
+  col += gloss;
+
+  col *= border;
+
+  // Gap between albums
+  float gap = smoothstep(0.0, 0.02, min(albumUV.x, albumUV.y));
+  gap *= smoothstep(0.0, 0.02, min(1.0 - albumUV.x, 1.0 - albumUV.y));
+  col = mix(vec3(0.02), col, gap);
+
+  // Slight perspective/depth effect - albums appear to recede
+  float depth = 1.0 - length(uv - 0.5) * 0.3;
+  col *= depth;
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Album Artwork', desc: 'Mac album grid' });
+
+// ============================================================================
+// BATCH 3: POPULAR REMAINING - Mac, Windows, After Dark
+// ============================================================================
+
+register('reflections', `
+// Mac OS X Reflections - objects with mirror reflections
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float aspect = u_resolution.x / u_resolution.y;
+  vec2 center = (uv - 0.5) * vec2(aspect, 1.0);
+
+  float t = u_time * 0.3;
+  vec3 col = vec3(0.0);
+
+  // Gradient background - dark top to lighter bottom
+  col = mix(vec3(0.02, 0.02, 0.05), vec3(0.1, 0.1, 0.15), uv.y);
+
+  // Reflective surface line
+  float surfaceY = 0.3;
+  float surfaceLine = smoothstep(0.005, 0.0, abs(uv.y - surfaceY));
+  col += vec3(0.3, 0.35, 0.4) * surfaceLine * 0.5;
+
+  // Floating objects
+  for (float i = 0.0; i < 5.0; i++) {
+    float seed = i * 23.7;
+
+    // Object position (above reflection surface)
+    vec2 objPos = vec2(
+      sin(t * 0.4 + seed) * 0.3,
+      0.5 + sin(t * 0.3 + seed * 0.7) * 0.15
+    );
+
+    // Object type based on index
+    float objType = fract(seed * 0.17);
+    float radius = 0.08 + 0.03 * sin(seed);
+
+    // Draw object
+    vec2 toObj = center - objPos;
+    float obj = 0.0;
+
+    if (objType < 0.5) {
+      // Sphere
+      obj = smoothstep(radius, radius - 0.02, length(toObj));
+    } else {
+      // Cube (approximate)
+      vec2 q = abs(toObj) - vec2(radius * 0.7);
+      float cube = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
+      obj = smoothstep(0.02, 0.0, cube);
+    }
+
+    // Object color
+    vec3 objCol = vec3(
+      0.4 + 0.6 * sin(seed),
+      0.4 + 0.6 * sin(seed + 2.0),
+      0.4 + 0.6 * sin(seed + 4.0)
+    );
+
+    // 3D shading
+    float shade = 0.7 + 0.3 * dot(normalize(toObj + vec2(0.0, 0.1)), vec2(0.5, 0.5));
+    col = mix(col, objCol * shade, obj);
+
+    // Draw reflection (below surface, mirrored)
+    vec2 reflPos = vec2(objPos.x, surfaceY - (objPos.y - surfaceY));
+    vec2 toRefl = center - reflPos;
+
+    float refl = 0.0;
+    if (objType < 0.5) {
+      refl = smoothstep(radius, radius - 0.02, length(toRefl));
+    } else {
+      vec2 q = abs(toRefl) - vec2(radius * 0.7);
+      float cube = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
+      refl = smoothstep(0.02, 0.0, cube);
+    }
+
+    // Reflection fades based on distance from surface
+    float reflFade = smoothstep(0.0, 0.3, surfaceY - center.y);
+    reflFade *= 0.4; // Reflections are dimmer
+
+    col = mix(col, objCol * shade * 0.5, refl * reflFade * step(center.y, surfaceY));
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Reflections', desc: 'Mac mirror effect' });
+
+register('baseball', `
+// Windows Plus! 98 Baseball - animated baseball scene
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time;
+
+  vec3 col = vec3(0.0);
+
+  // Sky gradient
+  col = mix(vec3(0.3, 0.5, 0.8), vec3(0.6, 0.8, 1.0), uv.y);
+
+  // Sun
+  vec2 sunPos = vec2(0.8, 0.85);
+  float sun = smoothstep(0.1, 0.08, length(uv - sunPos));
+  col = mix(col, vec3(1.0, 0.95, 0.7), sun);
+
+  // Field (green grass)
+  if (uv.y < 0.4) {
+    col = mix(vec3(0.15, 0.4, 0.1), vec3(0.2, 0.5, 0.15), uv.y / 0.4);
+
+    // Grass stripes
+    float stripe = sin(uv.x * 40.0) * 0.5 + 0.5;
+    col *= 0.95 + stripe * 0.1;
+  }
+
+  // Diamond/infield dirt
+  vec2 diamondCenter = vec2(0.5, 0.25);
+  vec2 toDiamond = uv - diamondCenter;
+  float diamond = abs(toDiamond.x) + abs(toDiamond.y * 1.5);
+  if (diamond < 0.15) {
+    col = mix(vec3(0.6, 0.45, 0.3), col, smoothstep(0.1, 0.15, diamond));
+  }
+
+  // Bases
+  vec2 bases[4];
+  bases[0] = diamondCenter + vec2(0.0, -0.08);   // Home plate
+  bases[1] = diamondCenter + vec2(0.08, 0.0);   // 1st base
+  bases[2] = diamondCenter + vec2(0.0, 0.08);   // 2nd base
+  bases[3] = diamondCenter + vec2(-0.08, 0.0);  // 3rd base
+
+  for (int i = 0; i < 4; i++) {
+    float base = smoothstep(0.015, 0.01, length(uv - bases[i]));
+    col = mix(col, vec3(1.0), base);
+  }
+
+  // Flying baseball
+  float ballTime = fract(t * 0.3);
+  vec2 ballStart = vec2(0.5, 0.15);
+  vec2 ballPeak = vec2(0.5 + sin(t * 0.5) * 0.2, 0.7);
+  vec2 ballEnd = vec2(0.8, 0.3);
+
+  // Parabolic arc
+  vec2 ballPos;
+  if (ballTime < 0.5) {
+    float s = ballTime * 2.0;
+    ballPos = mix(mix(ballStart, ballPeak, s), mix(ballPeak, ballEnd, s), s);
+  } else {
+    float s = (ballTime - 0.5) * 2.0;
+    ballPos = mix(ballEnd, ballStart, s);
+    ballPos.y += sin(s * 3.14159) * 0.1; // Return arc
+  }
+
+  // Draw baseball
+  float ball = smoothstep(0.025, 0.02, length(uv - ballPos));
+  col = mix(col, vec3(1.0, 0.98, 0.95), ball);
+
+  // Baseball stitching
+  vec2 toBall = (uv - ballPos) * 30.0;
+  float stitch = sin(toBall.x * 3.0 + toBall.y * 2.0);
+  stitch = smoothstep(0.8, 0.9, abs(stitch)) * ball;
+  col = mix(col, vec3(0.8, 0.2, 0.1), stitch * 0.5);
+
+  // Motion blur trail
+  for (float i = 1.0; i < 4.0; i++) {
+    float trailTime = ballTime - i * 0.02;
+    if (trailTime > 0.0) {
+      vec2 trailPos;
+      if (trailTime < 0.5) {
+        float s = trailTime * 2.0;
+        trailPos = mix(mix(ballStart, ballPeak, s), mix(ballPeak, ballEnd, s), s);
+      } else {
+        float s = (trailTime - 0.5) * 2.0;
+        trailPos = mix(ballEnd, ballStart, s);
+        trailPos.y += sin(s * 3.14159) * 0.1;
+      }
+      float trail = smoothstep(0.02, 0.015, length(uv - trailPos));
+      col = mix(col, vec3(1.0), trail * (1.0 - i / 4.0) * 0.3);
+    }
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Baseball', desc: 'Plus! 98 baseball scene' });
+
+register('wordofday', `
+// Mac OS X Word of the Day - dictionary display
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time * 0.1;
+
+  // Warm parchment background
+  vec3 col = mix(vec3(0.95, 0.92, 0.85), vec3(0.9, 0.85, 0.75), uv.y);
+
+  // Subtle texture
+  float noise = hash(uv * 100.0 + floor(t)) * 0.03;
+  col -= noise;
+
+  // Vignette
+  float vignette = 1.0 - length((uv - 0.5) * 1.3) * 0.3;
+  col *= vignette;
+
+  // Word display changes slowly
+  float wordIndex = floor(t);
+
+  // Decorative line
+  float lineY = 0.65;
+  float decorLine = smoothstep(0.002, 0.0, abs(uv.y - lineY));
+  decorLine *= smoothstep(0.1, 0.2, uv.x) * smoothstep(0.1, 0.2, 1.0 - uv.x);
+  col = mix(col, vec3(0.4, 0.3, 0.2), decorLine * 0.5);
+
+  // "Word:" label area (top)
+  float labelY = 0.75;
+  if (uv.y > 0.7 && uv.y < 0.8) {
+    // Stylized word representation (since we can't render real text)
+    for (float i = 0.0; i < 8.0; i++) {
+      float letterX = 0.3 + i * 0.05;
+      float letterHeight = 0.04 + hash(vec2(wordIndex, i)) * 0.02;
+      vec2 letterPos = vec2(letterX, labelY);
+
+      float letter = smoothstep(0.02, 0.015, abs(uv.x - letterX));
+      letter *= smoothstep(letterHeight, 0.0, abs(uv.y - labelY));
+      col = mix(col, vec3(0.1, 0.08, 0.05), letter * 0.8);
+    }
+  }
+
+  // "Definition:" area (middle)
+  for (float line = 0.0; line < 3.0; line++) {
+    float defY = 0.5 - line * 0.08;
+
+    // Text line representation
+    float lineWidth = 0.5 + hash(vec2(wordIndex, line + 10.0)) * 0.2;
+    float lineStart = 0.2;
+
+    if (uv.y > defY - 0.015 && uv.y < defY + 0.015) {
+      float textLine = step(lineStart, uv.x) * step(uv.x, lineStart + lineWidth);
+      // Individual word blocks
+      float words = step(0.5, fract(uv.x * 15.0 + hash(vec2(line, 0.0))));
+      col = mix(col, vec3(0.25, 0.2, 0.15), textLine * 0.6 * words);
+    }
+  }
+
+  // Pronunciation guide (smaller text)
+  float pronY = 0.58;
+  if (uv.y > pronY - 0.01 && uv.y < pronY + 0.01) {
+    float pronText = smoothstep(0.25, 0.3, uv.x) * smoothstep(0.5, 0.45, uv.x);
+    col = mix(col, vec3(0.4, 0.35, 0.3), pronText * 0.4);
+  }
+
+  // Page number at bottom
+  float pageY = 0.1;
+  float pageNum = smoothstep(0.01, 0.0, abs(uv.y - pageY)) * smoothstep(0.47, 0.5, uv.x) * smoothstep(0.53, 0.5, uv.x);
+  col = mix(col, vec3(0.3), pageNum * 0.3);
+
+  // Fade transition between words
+  float fade = smoothstep(0.0, 0.1, fract(t)) * smoothstep(1.0, 0.9, fract(t));
+  col = mix(vec3(0.9, 0.85, 0.75), col, fade);
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Word of the Day', desc: 'Mac dictionary display' });
+
+register('toasterspro', `
+// After Dark Flying Toasters Pro - enhanced toasters with tricks
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float aspect = u_resolution.x / u_resolution.y;
+
+  float t = u_time;
+  vec3 col = vec3(0.0, 0.0, 0.05); // Dark blue night sky
+
+  // Stars background
+  for (float i = 0.0; i < 50.0; i++) {
+    vec2 starPos = vec2(hash(vec2(i, 0.0)), hash(vec2(i, 1.0)));
+    float twinkle = sin(t * 3.0 + i * 7.0) * 0.3 + 0.7;
+    float star = smoothstep(0.003, 0.0, length(uv - starPos)) * twinkle;
+    col += vec3(1.0, 0.95, 0.8) * star;
+  }
+
+  // Multiple toasters with different behaviors
+  for (float i = 0.0; i < 6.0; i++) {
+    float seed = i * 31.7;
+    float behavior = fract(seed * 0.23);
+
+    // Toaster position
+    float speed = 0.1 + hash(vec2(i, 5.0)) * 0.1;
+    vec2 toasterPos;
+
+    if (behavior < 0.3) {
+      // Normal diagonal flight
+      toasterPos = vec2(
+        fract(-t * speed + hash(vec2(i, 0.0)) * 2.0) * 1.4 - 0.2,
+        fract(-t * speed * 0.7 + hash(vec2(i, 1.0)) * 2.0) * 1.2 - 0.1
+      );
+    } else if (behavior < 0.6) {
+      // Loop-de-loop
+      float loopPhase = t * 0.5 + seed;
+      toasterPos = vec2(
+        fract(-t * speed * 0.5 + hash(vec2(i, 0.0))) * 1.4 - 0.2,
+        0.5 + sin(loopPhase) * 0.3
+      );
+    } else {
+      // Barrel roll
+      toasterPos = vec2(
+        fract(-t * speed + hash(vec2(i, 0.0)) * 2.0) * 1.4 - 0.2,
+        0.3 + hash(vec2(i, 2.0)) * 0.4 + sin(t * 2.0 + seed) * 0.1
+      );
+    }
+
+    vec2 toToaster = (uv - toasterPos) * vec2(aspect, 1.0);
+
+    // Rotation for barrel roll
+    float rotation = behavior > 0.6 ? sin(t * 3.0 + seed) * 0.5 : 0.0;
+    float c = cos(rotation), s = sin(rotation);
+    toToaster = vec2(c * toToaster.x - s * toToaster.y, s * toToaster.x + c * toToaster.y);
+
+    // Toaster body
+    float toasterW = 0.06;
+    float toasterH = 0.04;
+    vec2 toasterSize = vec2(toasterW, toasterH);
+
+    float body = smoothstep(0.0, 0.01, toasterSize.x - abs(toToaster.x));
+    body *= smoothstep(0.0, 0.01, toasterSize.y - abs(toToaster.y));
+
+    // Chrome color
+    vec3 chrome = vec3(0.7, 0.75, 0.8);
+    chrome += vec3(0.1) * (toToaster.y / toasterH); // Gradient
+
+    // Slot on top
+    float slot = step(abs(toToaster.x), toasterW * 0.6);
+    slot *= step(toasterH * 0.3, toToaster.y) * step(toToaster.y, toasterH * 0.9);
+    chrome = mix(chrome, vec3(0.1), slot * 0.5);
+
+    col = mix(col, chrome, body);
+
+    // Wings (flapping faster for tricks)
+    float flapSpeed = behavior > 0.3 ? 12.0 : 8.0;
+    float wingFlap = sin(t * flapSpeed + i * 2.0) * 0.3;
+
+    for (float w = -1.0; w <= 1.0; w += 2.0) {
+      vec2 wingBase = toasterPos + vec2(w * toasterW * 0.8, toasterH * 0.3);
+      vec2 toWing = (uv - wingBase) * vec2(aspect, 1.0);
+
+      // Rotate wing
+      float wingAngle = w * (0.5 + wingFlap);
+      float wc = cos(wingAngle), ws = sin(wingAngle);
+      toWing = vec2(wc * toWing.x - ws * toWing.y, ws * toWing.x + wc * toWing.y);
+
+      float wing = step(0.0, toWing.x * w) * step(toWing.x * w, 0.05);
+      wing *= step(abs(toWing.y), 0.02);
+
+      col = mix(col, vec3(0.9, 0.85, 0.7), wing);
+    }
+
+    // Toast popping out (more dramatic for pro version)
+    float toastPop = sin(t * 2.0 + seed) * 0.5 + 0.5;
+    vec2 toastPos = toasterPos + vec2(0.0, toasterH + toastPop * 0.03);
+    vec2 toToast = uv - toastPos;
+
+    float toast = step(abs(toToast.x), toasterW * 0.4);
+    toast *= step(0.0, toToast.y) * step(toToast.y, 0.025);
+
+    vec3 toastCol = vec3(0.8, 0.6, 0.3);
+    // Glow when hot
+    toastCol += vec3(0.2, 0.1, 0.0) * toastPop;
+
+    col = mix(col, toastCol, toast * toastPop);
+
+    // Sparkle trail for pro toasters
+    if (behavior > 0.5) {
+      for (float sp = 1.0; sp < 5.0; sp++) {
+        vec2 sparkPos = toasterPos + vec2(sp * 0.02, sp * 0.015);
+        float sparkle = smoothstep(0.008, 0.0, length(uv - sparkPos));
+        sparkle *= sin(t * 10.0 + sp * 3.0) * 0.5 + 0.5;
+        col += vec3(1.0, 0.8, 0.3) * sparkle * 0.5;
+      }
+    }
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Flying Toasters Pro', desc: 'After Dark enhanced' });
+
+register('rssvisualizer', `
+// Mac OS X Tiger RSS Visualizer - 3D floating headlines
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec2 center = uv - 0.5;
+
+  float t = u_time * 0.2;
+  vec3 col = vec3(0.0);
+
+  // Deep space background with subtle nebula
+  col = mix(vec3(0.0, 0.01, 0.03), vec3(0.02, 0.0, 0.04), uv.y);
+
+  // Nebula clouds
+  for (float layer = 0.0; layer < 2.0; layer++) {
+    vec2 nebUV = center * (2.0 + layer) + vec2(t * 0.1, 0.0);
+    float neb = sin(nebUV.x * 3.0) * cos(nebUV.y * 2.0 + nebUV.x);
+    neb = smoothstep(0.3, 0.7, neb * 0.5 + 0.5);
+    vec3 nebCol = layer < 1.0 ? vec3(0.1, 0.05, 0.15) : vec3(0.05, 0.1, 0.15);
+    col += nebCol * neb * 0.3;
+  }
+
+  // Stars
+  for (float i = 0.0; i < 40.0; i++) {
+    vec2 starPos = vec2(hash(vec2(i, 0.0)), hash(vec2(i, 1.0)));
+    float star = smoothstep(0.002, 0.0, length(uv - starPos));
+    col += vec3(1.0) * star * 0.5;
+  }
+
+  // 3D floating "headlines" (abstract text blocks)
+  for (float i = 0.0; i < 8.0; i++) {
+    float seed = i * 17.3;
+
+    // 3D position
+    float z = fract(hash(vec2(i, 2.0)) + t * 0.2);
+    float scale = 1.0 / (z * 3.0 + 0.5);
+
+    vec2 pos = vec2(
+      (hash(vec2(i, 0.0)) - 0.5) * 2.0,
+      (hash(vec2(i, 1.0)) - 0.5) * 1.5
+    );
+    pos = pos * scale * 0.3;
+
+    // Rotation in 3D space
+    float rotY = t * 0.5 + seed;
+    pos.x += sin(rotY) * 0.1 * scale;
+
+    vec2 toBlock = center - pos;
+
+    // Headline block (3D perspective)
+    float blockW = 0.15 * scale;
+    float blockH = 0.02 * scale;
+
+    // 3D tilt
+    float tilt = sin(rotY) * 0.3;
+    toBlock.y += toBlock.x * tilt;
+
+    float block = step(abs(toBlock.x), blockW);
+    block *= step(abs(toBlock.y), blockH);
+
+    // Glow/glass effect
+    float glow = smoothstep(blockW + 0.02 * scale, blockW, abs(toBlock.x));
+    glow *= smoothstep(blockH + 0.01 * scale, blockH, abs(toBlock.y));
+
+    // Text lines within block
+    float textLine = 0.0;
+    for (float line = 0.0; line < 2.0; line++) {
+      float lineY = (line - 0.5) * blockH * 0.8;
+      float lineLen = blockW * (0.6 + hash(vec2(seed, line)) * 0.3);
+      float text = step(abs(toBlock.y - lineY), blockH * 0.15);
+      text *= step(-lineLen, toBlock.x) * step(toBlock.x, lineLen);
+      textLine = max(textLine, text);
+    }
+
+    // Glass panel color
+    vec3 panelCol = vec3(0.1, 0.15, 0.25);
+    panelCol += vec3(0.05, 0.1, 0.15) * (1.0 - z); // Fade with distance
+
+    // Reflection highlight
+    float highlight = smoothstep(0.5, -0.5, toBlock.y / blockH) * 0.3;
+    panelCol += vec3(0.2) * highlight;
+
+    col = mix(col, panelCol, glow * (1.0 - z * 0.5));
+    col = mix(col, vec3(0.8, 0.85, 0.9), textLine * glow * (1.0 - z));
+  }
+
+  // Subtle lens flare
+  float flare = smoothstep(0.3, 0.0, length(center - vec2(0.3, 0.2)));
+  col += vec3(0.1, 0.15, 0.2) * flare * 0.3;
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'RSS Visualizer', desc: 'Mac Tiger 3D feeds' });
+
+// ============================================================================
+// BATCH 4: FINAL EXTRAS - Mac & Windows
+// ============================================================================
+
+register('aerial', `
+// Mac OS X Aerial - stylized flyover landscapes
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+
+  float t = u_time * 0.05;
+  vec3 col = vec3(0.0);
+
+  // Camera flying over terrain
+  vec2 camPos = vec2(t, sin(t * 0.3) * 0.5);
+
+  // Sky gradient (sunset/sunrise colors)
+  float skyPhase = sin(t * 0.1) * 0.5 + 0.5;
+  vec3 skyTop = mix(vec3(0.1, 0.2, 0.5), vec3(0.8, 0.4, 0.2), skyPhase);
+  vec3 skyBot = mix(vec3(0.4, 0.5, 0.7), vec3(1.0, 0.7, 0.4), skyPhase);
+  col = mix(skyBot, skyTop, uv.y);
+
+  // Sun/moon
+  vec2 sunPos = vec2(0.7, 0.85);
+  float sun = smoothstep(0.1, 0.08, length(uv - sunPos));
+  vec3 sunCol = mix(vec3(1.0, 0.95, 0.8), vec3(0.9, 0.7, 0.3), skyPhase);
+  col = mix(col, sunCol, sun);
+
+  // Clouds
+  for (float layer = 0.0; layer < 3.0; layer++) {
+    float cloudY = 0.6 + layer * 0.1;
+    vec2 cloudUV = vec2(uv.x + t * (0.1 + layer * 0.02), uv.y);
+
+    // Procedural cloud shapes
+    float cloud = 0.0;
+    for (float i = 0.0; i < 5.0; i++) {
+      float cx = hash(vec2(i + layer * 10.0, 0.0));
+      float cy = cloudY + hash(vec2(i + layer * 10.0, 1.0)) * 0.05;
+      float cw = 0.1 + hash(vec2(i + layer * 10.0, 2.0)) * 0.15;
+
+      float cloudDist = length((cloudUV - vec2(fract(cx + t * 0.05), cy)) * vec2(1.0, 3.0));
+      cloud = max(cloud, smoothstep(cw, cw - 0.05, cloudDist));
+    }
+
+    col = mix(col, vec3(1.0, 0.98, 0.95), cloud * (0.8 - layer * 0.2));
+  }
+
+  // Terrain (rolling hills)
+  float horizon = 0.35;
+
+  if (uv.y < horizon) {
+    // Ground texture
+    vec2 groundUV = vec2(uv.x + camPos.x, (horizon - uv.y) * 3.0);
+
+    // Hills using sine waves
+    float hills = 0.0;
+    hills += sin(groundUV.x * 5.0) * 0.03;
+    hills += sin(groundUV.x * 12.0 + 1.0) * 0.015;
+    hills += sin(groundUV.x * 25.0 + 2.0) * 0.008;
+
+    float terrainLine = horizon + hills;
+
+    if (uv.y < terrainLine) {
+      // Terrain color (varies with position)
+      float terrainType = sin(groundUV.x * 0.5) * 0.5 + 0.5;
+      vec3 grass = vec3(0.2, 0.5, 0.2);
+      vec3 desert = vec3(0.7, 0.55, 0.35);
+      vec3 terrainCol = mix(grass, desert, terrainType);
+
+      // Distance fog
+      float dist = (horizon - uv.y) / horizon;
+      terrainCol = mix(terrainCol, mix(skyBot, vec3(0.6, 0.65, 0.75), 0.5), dist * 0.8);
+
+      col = terrainCol;
+
+      // Water/rivers
+      float river = smoothstep(0.02, 0.0, abs(fract(groundUV.x * 2.0 + sin(groundUV.y * 5.0) * 0.1) - 0.5) - 0.02);
+      river *= step(0.3, terrainType) * step(terrainType, 0.7);
+      col = mix(col, vec3(0.2, 0.4, 0.6), river * 0.5);
+    }
+  }
+
+  // Atmospheric haze at horizon
+  float haze = smoothstep(horizon + 0.05, horizon - 0.05, uv.y);
+  col = mix(col, mix(skyBot, vec3(0.8, 0.85, 0.9), 0.5), haze * 0.3);
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Aerial', desc: 'Mac flyover landscapes' });
+
+register('channels', `
+// Windows 98 Channels - channel content display style
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time * 0.2;
+
+  vec3 col = vec3(0.0);
+
+  // Dark blue Windows background
+  col = mix(vec3(0.0, 0.0, 0.2), vec3(0.0, 0.1, 0.3), uv.y);
+
+  // Channel bars scrolling
+  float numChannels = 6.0;
+  float channelHeight = 0.12;
+  float gap = 0.02;
+
+  for (float i = 0.0; i < numChannels; i++) {
+    // Channel position (scrolling)
+    float channelY = fract((i + 0.5) / numChannels - t * 0.15) * (1.0 + channelHeight) - channelHeight * 0.5;
+
+    // Channel bar bounds
+    float inChannel = step(channelY - channelHeight * 0.5, uv.y);
+    inChannel *= step(uv.y, channelY + channelHeight * 0.5);
+    inChannel *= step(0.1, uv.x) * step(uv.x, 0.9);
+
+    if (inChannel > 0.5) {
+      // Channel background gradient
+      float channelGrad = (uv.y - (channelY - channelHeight * 0.5)) / channelHeight;
+      vec3 channelCol = mix(vec3(0.2, 0.3, 0.5), vec3(0.1, 0.15, 0.3), channelGrad);
+
+      // Icon area (left side)
+      float iconX = 0.15;
+      if (uv.x < 0.25) {
+        // Abstract icon
+        float iconDist = length((uv - vec2(iconX, channelY)) * vec2(1.0, 1.5));
+        float icon = smoothstep(0.04, 0.03, iconDist);
+
+        vec3 iconCol = vec3(
+          0.5 + 0.5 * sin(i * 2.0),
+          0.5 + 0.5 * sin(i * 2.5 + 1.0),
+          0.5 + 0.5 * sin(i * 3.0 + 2.0)
+        );
+        channelCol = mix(channelCol, iconCol, icon);
+      }
+
+      // Text area (middle) - horizontal lines representing text
+      if (uv.x > 0.28 && uv.x < 0.75) {
+        float textLine1 = smoothstep(0.004, 0.0, abs(uv.y - (channelY + 0.02)));
+        textLine1 *= step(0.28, uv.x) * step(uv.x, 0.6 + hash(vec2(i, 0.0)) * 0.1);
+
+        float textLine2 = smoothstep(0.003, 0.0, abs(uv.y - (channelY - 0.015)));
+        textLine2 *= step(0.28, uv.x) * step(uv.x, 0.5 + hash(vec2(i, 1.0)) * 0.15);
+
+        channelCol = mix(channelCol, vec3(0.9), textLine1 * 0.8);
+        channelCol = mix(channelCol, vec3(0.7), textLine2 * 0.5);
+      }
+
+      // Arrow/button (right side)
+      if (uv.x > 0.8) {
+        vec2 arrowPos = vec2(0.85, channelY);
+        vec2 toArrow = uv - arrowPos;
+
+        // Simple arrow shape
+        float arrow = step(abs(toArrow.y), 0.02 - abs(toArrow.x - 0.01) * 0.5);
+        arrow *= step(0.0, toArrow.x) * step(toArrow.x, 0.03);
+
+        channelCol = mix(channelCol, vec3(0.0, 0.5, 0.0), arrow);
+      }
+
+      // Border highlight/shadow
+      float topEdge = smoothstep(channelHeight * 0.48, channelHeight * 0.5, uv.y - (channelY - channelHeight * 0.5));
+      float botEdge = smoothstep(channelHeight * 0.48, channelHeight * 0.5, (channelY + channelHeight * 0.5) - uv.y);
+      channelCol += vec3(0.2) * (1.0 - topEdge) * 0.5;
+      channelCol -= vec3(0.1) * (1.0 - botEdge) * 0.5;
+
+      col = channelCol;
+    }
+  }
+
+  // Windows logo watermark
+  vec2 logoPos = vec2(0.5, 0.5);
+  float logo = smoothstep(0.2, 0.15, length(uv - logoPos));
+  col += vec3(0.02, 0.04, 0.08) * logo;
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Channels', desc: 'Windows 98 channels' });
+
+register('photomobile', `
+// Mac OS X Photo Mobile - hanging photos gently swaying
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float aspect = u_resolution.x / u_resolution.y;
+  vec2 center = (uv - 0.5) * vec2(aspect, 1.0);
+
+  float t = u_time * 0.3;
+
+  // Soft gradient background
+  vec3 col = mix(vec3(0.9, 0.92, 0.95), vec3(0.8, 0.85, 0.9), uv.y);
+
+  // Subtle light rays from top
+  float rays = sin(center.x * 10.0 + t * 0.5) * 0.5 + 0.5;
+  rays *= smoothstep(0.5, 0.0, -center.y);
+  col += vec3(0.05) * rays;
+
+  // Mobile structure (hanging wires)
+  float mainWireX = sin(t * 0.2) * 0.05;
+  float mainWire = smoothstep(0.003, 0.0, abs(center.x - mainWireX));
+  mainWire *= step(0.3, center.y);
+  col = mix(col, vec3(0.3), mainWire);
+
+  // Hanging photos
+  for (float i = 0.0; i < 5.0; i++) {
+    float seed = i * 17.3;
+
+    // Photo swings on its wire
+    float swingPhase = t + seed;
+    float swing = sin(swingPhase * 0.7) * 0.15;
+
+    // Wire attachment point
+    float wireX = (i - 2.0) * 0.25 + sin(t * 0.3 + i) * 0.05;
+    float wireTop = 0.3 + sin(i * 2.0) * 0.1;
+
+    // Photo position (hanging below wire)
+    float wireLen = 0.15 + hash(vec2(i, 0.0)) * 0.1;
+    vec2 photoCenter = vec2(wireX + sin(swing) * wireLen, wireTop - wireLen * cos(swing) - 0.1);
+
+    // Photo dimensions
+    float photoW = 0.08;
+    float photoH = 0.06;
+
+    // Photo rotation follows swing
+    float photoRot = swing * 0.5;
+    float c = cos(photoRot), s = sin(photoRot);
+
+    vec2 toPhoto = center - photoCenter;
+    toPhoto = vec2(c * toPhoto.x - s * toPhoto.y, s * toPhoto.x + c * toPhoto.y);
+
+    // Wire to photo
+    vec2 wireEnd = vec2(wireX, wireTop);
+    vec2 photoTop = photoCenter + vec2(s, c) * photoH * 0.5;
+
+    float wire = 0.0;
+    vec2 wireDir = normalize(photoTop - wireEnd);
+    float wireProj = dot(center - wireEnd, wireDir);
+    if (wireProj > 0.0 && wireProj < length(photoTop - wireEnd)) {
+      vec2 wireClosest = wireEnd + wireDir * wireProj;
+      wire = smoothstep(0.003, 0.0, length(center - wireClosest));
+    }
+    col = mix(col, vec3(0.2), wire);
+
+    // Draw photo frame
+    if (abs(toPhoto.x) < photoW && abs(toPhoto.y) < photoH) {
+      // White border
+      float border = step(photoW - 0.01, abs(toPhoto.x)) + step(photoH - 0.01, abs(toPhoto.y));
+
+      // Photo "image" - abstract colorful content
+      vec3 photoCol = vec3(
+        0.3 + 0.5 * sin(seed + toPhoto.x * 10.0),
+        0.3 + 0.5 * sin(seed + 1.0 + toPhoto.y * 10.0),
+        0.3 + 0.5 * sin(seed + 2.0 + (toPhoto.x + toPhoto.y) * 5.0)
+      );
+
+      // Shadow/depth on photo
+      photoCol *= 0.9 + 0.1 * (toPhoto.x / photoW);
+
+      col = mix(col, mix(photoCol, vec3(1.0), border), 0.95);
+
+      // Drop shadow
+      vec2 shadowOffset = vec2(0.01, -0.01);
+      vec2 toShadow = center - photoCenter - shadowOffset;
+      toShadow = vec2(c * toShadow.x - s * toShadow.y, s * toShadow.x + c * toShadow.y);
+      if (abs(toShadow.x) < photoW && abs(toShadow.y) < photoH) {
+        // Already drawing photo, shadow is behind
+      }
+    } else {
+      // Shadow (slightly offset)
+      vec2 shadowOffset = vec2(0.01, -0.015);
+      vec2 toShadow = center - photoCenter - shadowOffset;
+      toShadow = vec2(c * toShadow.x - s * toShadow.y, s * toShadow.x + c * toShadow.y);
+      if (abs(toShadow.x) < photoW && abs(toShadow.y) < photoH) {
+        col = mix(col, vec3(0.0), 0.15);
+      }
+    }
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Photo Mobile', desc: 'Mac hanging photos' });
+
+register('vintageprints', `
+// Mac OS X Vintage Prints - old-style photographs
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time * 0.15;
+
+  // Photo changes every few seconds
+  float photoIndex = floor(t);
+  float photoProgress = fract(t);
+
+  // Sepia/vintage paper background
+  vec3 col = mix(vec3(0.85, 0.8, 0.7), vec3(0.75, 0.7, 0.6), uv.y);
+
+  // Paper texture
+  float paperNoise = hash(uv * 200.0 + photoIndex) * 0.05;
+  col -= paperNoise;
+
+  // Photo frame area
+  float frameMargin = 0.1;
+  float inFrame = step(frameMargin, uv.x) * step(uv.x, 1.0 - frameMargin);
+  inFrame *= step(frameMargin, uv.y) * step(uv.y, 1.0 - frameMargin);
+
+  if (inFrame > 0.5) {
+    vec2 photoUV = (uv - frameMargin) / (1.0 - 2.0 * frameMargin);
+
+    // Generate vintage photo content based on index
+    vec3 photoCol = vec3(0.0);
+
+    float photoType = hash(vec2(photoIndex, 0.0));
+
+    if (photoType < 0.33) {
+      // Portrait style - oval vignette with face suggestion
+      float oval = length((photoUV - 0.5) * vec2(1.0, 1.3));
+      photoCol = mix(vec3(0.9, 0.85, 0.75), vec3(0.3, 0.25, 0.2), smoothstep(0.3, 0.5, oval));
+
+      // Face suggestion (abstract)
+      float face = smoothstep(0.2, 0.15, length(photoUV - vec2(0.5, 0.55)));
+      photoCol = mix(photoCol, vec3(0.7, 0.6, 0.5), face * 0.5);
+
+    } else if (photoType < 0.66) {
+      // Landscape style
+      float horizon = 0.4 + hash(vec2(photoIndex, 1.0)) * 0.1;
+
+      // Sky
+      photoCol = mix(vec3(0.7, 0.75, 0.8), vec3(0.5, 0.55, 0.6), photoUV.y / horizon);
+
+      // Ground
+      if (photoUV.y < horizon) {
+        photoCol = mix(vec3(0.4, 0.35, 0.3), vec3(0.3, 0.25, 0.2), photoUV.y / horizon);
+      }
+
+      // Trees/structures silhouette
+      float treeLine = horizon - 0.05 - abs(sin(photoUV.x * 20.0 + photoIndex)) * 0.08;
+      if (photoUV.y < treeLine) {
+        photoCol = vec3(0.15, 0.12, 0.1);
+      }
+
+    } else {
+      // Group/family photo style
+      photoCol = vec3(0.5, 0.45, 0.4); // Indoor background
+
+      // Figures (abstract shapes)
+      for (float p = 0.0; p < 4.0; p++) {
+        float figX = 0.2 + p * 0.2;
+        float figH = 0.3 + hash(vec2(photoIndex, p + 10.0)) * 0.15;
+        vec2 figPos = vec2(figX, 0.3);
+
+        float figure = smoothstep(0.08, 0.06, length((photoUV - figPos) * vec2(1.0, 2.0 / figH)));
+        photoCol = mix(photoCol, vec3(0.3, 0.25, 0.2), figure);
+      }
+    }
+
+    // Sepia tone
+    float gray = dot(photoCol, vec3(0.299, 0.587, 0.114));
+    photoCol = mix(vec3(gray), vec3(gray * 1.1, gray * 0.95, gray * 0.8), 0.7);
+
+    // Vintage damage effects
+    float damage = hash(photoUV * 50.0 + photoIndex * 0.1);
+    if (damage > 0.98) {
+      photoCol = mix(photoCol, vec3(0.9, 0.85, 0.8), 0.5);
+    }
+
+    // Scratches
+    float scratch = smoothstep(0.001, 0.0, abs(photoUV.y - fract(photoUV.x * 3.0 + photoIndex * 0.5) * 0.3 - 0.35));
+    scratch *= step(0.95, hash(vec2(floor(photoUV.x * 20.0), photoIndex)));
+    photoCol = mix(photoCol, vec3(0.9), scratch * 0.3);
+
+    // Faded edges
+    float edgeFade = smoothstep(0.0, 0.1, photoUV.x) * smoothstep(1.0, 0.9, photoUV.x);
+    edgeFade *= smoothstep(0.0, 0.1, photoUV.y) * smoothstep(1.0, 0.9, photoUV.y);
+    photoCol = mix(vec3(0.8, 0.75, 0.65), photoCol, edgeFade);
+
+    col = photoCol;
+  }
+
+  // Photo border
+  float borderWidth = 0.015;
+  float border = step(frameMargin - borderWidth, uv.x) * step(uv.x, 1.0 - frameMargin + borderWidth);
+  border *= step(frameMargin - borderWidth, uv.y) * step(uv.y, 1.0 - frameMargin + borderWidth);
+  border *= 1.0 - inFrame;
+  col = mix(col, vec3(0.95, 0.92, 0.88), border);
+
+  // Transition fade
+  float fade = smoothstep(0.0, 0.15, photoProgress) * smoothstep(1.0, 0.85, photoProgress);
+  col = mix(vec3(0.8, 0.75, 0.65), col, fade);
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Vintage Prints', desc: 'Mac old photographs' });
+
+register('garfield', `
+// Windows Plus! 98 Garfield - comic style animation
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float aspect = u_resolution.x / u_resolution.y;
+
+  float t = u_time;
+  vec3 col = vec3(0.0);
+
+  // Light blue sky background
+  col = mix(vec3(0.6, 0.8, 1.0), vec3(0.4, 0.6, 0.9), uv.y);
+
+  // Clouds
+  for (float i = 0.0; i < 3.0; i++) {
+    float cloudX = fract(i * 0.33 + t * 0.02) * 1.4 - 0.2;
+    float cloudY = 0.75 + i * 0.08;
+
+    float cloud = 0.0;
+    for (float j = 0.0; j < 3.0; j++) {
+      vec2 puffPos = vec2(cloudX + j * 0.05, cloudY + sin(j) * 0.02);
+      cloud = max(cloud, smoothstep(0.06, 0.04, length(uv - puffPos)));
+    }
+    col = mix(col, vec3(1.0), cloud);
+  }
+
+  // Ground (green grass)
+  if (uv.y < 0.25) {
+    col = vec3(0.3, 0.6, 0.2);
+    // Grass texture
+    float grass = sin(uv.x * 100.0) * sin(uv.x * 73.0 + 1.0) * 0.1;
+    col.g += grass * step(uv.y, 0.28);
+  }
+
+  // Garfield-style orange cat (simplified/abstract)
+  float catBounce = abs(sin(t * 2.0)) * 0.05;
+
+  // Body (orange oval)
+  vec2 bodyPos = vec2(0.5, 0.35 + catBounce);
+  vec2 toBody = (uv - bodyPos) * vec2(aspect, 1.0);
+  float body = smoothstep(0.15, 0.12, length(toBody * vec2(1.0, 1.5)));
+
+  // Head
+  vec2 headPos = vec2(0.58, 0.42 + catBounce);
+  vec2 toHead = (uv - headPos) * vec2(aspect, 1.0);
+  float head = smoothstep(0.1, 0.08, length(toHead));
+
+  // Combine body parts
+  float cat = max(body, head);
+
+  // Orange fur color
+  vec3 furCol = vec3(0.95, 0.55, 0.1);
+
+  // Stripes
+  float stripes = sin(toBody.x * 30.0 + toBody.y * 5.0) * 0.5 + 0.5;
+  stripes = smoothstep(0.4, 0.6, stripes);
+  furCol = mix(furCol, vec3(0.7, 0.35, 0.05), stripes * 0.3 * body);
+
+  col = mix(col, furCol, cat);
+
+  // Eyes (half-closed, sleepy Garfield style)
+  for (float eye = -1.0; eye <= 1.0; eye += 2.0) {
+    vec2 eyePos = headPos + vec2(eye * 0.025, 0.015);
+    vec2 toEye = (uv - eyePos) * vec2(aspect, 1.0);
+
+    // White of eye
+    float eyeWhite = smoothstep(0.025, 0.02, length(toEye * vec2(1.0, 0.7)));
+
+    // Eyelid (half closed)
+    float lidClosed = smoothstep(0.0, 0.01, toEye.y);
+    eyeWhite *= lidClosed;
+
+    col = mix(col, vec3(1.0), eyeWhite * cat);
+
+    // Pupil
+    float pupil = smoothstep(0.012, 0.008, length(toEye * vec2(1.0, 0.7)));
+    pupil *= lidClosed;
+    col = mix(col, vec3(0.0), pupil * cat);
+  }
+
+  // Nose (pink triangle)
+  vec2 nosePos = headPos + vec2(0.0, -0.01);
+  vec2 toNose = (uv - nosePos) * vec2(aspect, 1.0);
+  float nose = step(abs(toNose.x), 0.015 - toNose.y * 0.5);
+  nose *= step(-0.015, toNose.y) * step(toNose.y, 0.01);
+  col = mix(col, vec3(0.9, 0.5, 0.5), nose * cat);
+
+  // Smile
+  float smileY = headPos.y - 0.035;
+  vec2 toSmile = uv - vec2(headPos.x, smileY);
+  toSmile.x *= aspect;
+  float smile = smoothstep(0.004, 0.0, abs(length(toSmile) - 0.025));
+  smile *= step(toSmile.y, 0.0);
+  col = mix(col, vec3(0.2), smile * cat);
+
+  // Tail (wagging)
+  float tailWag = sin(t * 4.0) * 0.1;
+  vec2 tailBase = vec2(0.38, 0.32 + catBounce);
+  for (float seg = 0.0; seg < 5.0; seg++) {
+    vec2 tailPos = tailBase + vec2(-seg * 0.025 + sin(seg * 0.5 + tailWag) * 0.02, seg * 0.015);
+    vec2 toTail = (uv - tailPos) * vec2(aspect, 1.0);
+    float tail = smoothstep(0.02, 0.015, length(toTail));
+    col = mix(col, furCol, tail);
+  }
+
+  // Legs
+  for (float leg = -1.0; leg <= 1.0; leg += 2.0) {
+    vec2 legPos = vec2(0.5 + leg * 0.08, 0.25);
+    vec2 toLeg = (uv - legPos) * vec2(aspect, 1.0);
+    float legShape = smoothstep(0.025, 0.02, abs(toLeg.x));
+    legShape *= step(0.0, toLeg.y) * step(toLeg.y, 0.1 + catBounce);
+    col = mix(col, furCol, legShape);
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Garfield', desc: 'Plus! 98 comic cat' });
+
 export default ass;
