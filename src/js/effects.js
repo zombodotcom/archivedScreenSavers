@@ -233,324 +233,186 @@ void main() {
 }`, { name: 'Mystify', desc: 'Bouncing polygon lines with trails' });
 
 register('pipes', `
-// Windows 95-style 3D Pipes with elbow joints and metallic colors
-// Based on original Microsoft OpenGL screensaver algorithm
-
-// SDF for a torus (elbow joint)
-float sdTorus(vec3 p, vec2 t) {
-  vec2 q = vec2(length(p.xz) - t.x, p.y);
-  return length(q) - t.y;
-}
-
-// Metallic pipe colors (classic Windows palette)
-vec3 getPipeColor(float id) {
-  int colorIdx = int(mod(id * 7.0, 6.0));
-  if (colorIdx == 0) return vec3(0.8, 0.15, 0.1);   // Red
-  if (colorIdx == 1) return vec3(0.1, 0.4, 0.8);   // Blue
-  if (colorIdx == 2) return vec3(0.1, 0.7, 0.2);   // Green
-  if (colorIdx == 3) return vec3(0.6, 0.1, 0.7);   // Purple
-  if (colorIdx == 4) return vec3(0.9, 0.7, 0.1);   // Gold
-  return vec3(0.7, 0.7, 0.75);                      // Silver
-}
-
 void main() {
   vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
-  vec3 col = vec3(0.02, 0.02, 0.05); // Dark background like original
+  vec3 col = vec3(0.0);
 
   float camT = u_time * u_camSpeed;
 
-  // Camera flies through the pipe network (like original)
+  // Camera position - offset to stay between pipe cells
   vec3 ro = vec3(
-    sin(camT * 0.7) * u_camDistance * 0.8,
-    sin(camT * 0.4) * u_camDistance * 0.5,
-    u_time * 0.5 + cos(camT * 0.3) * u_camDistance * 0.3
+    sin(camT) * u_camDistance + 0.5,
+    sin(camT * 0.7) * (u_camDistance * 0.4) + 0.5,
+    cos(camT) * u_camDistance + 0.5
   );
-
-  // Look ahead in the direction of travel
-  vec3 ta = ro + vec3(sin(camT * 0.5) * 2.0, sin(camT * 0.3), 3.0);
+  vec3 ta = vec3(0.5);
   vec3 fwd = normalize(ta - ro);
   vec3 right = normalize(cross(vec3(0,1,0), fwd));
   vec3 up = cross(fwd, right);
   vec3 rd = normalize(uv.x * right + uv.y * up + 1.5 * fwd);
 
-  float t = 0.1;
-  vec3 hitColor = col;
-
-  for (int i = 0; i < 50; i++) {
+  // Start ray a bit away from camera to avoid clipping
+  float t = 0.5;
+  for (int i = 0; i < 60; i++) {  // Reduced from 80 iterations
     vec3 p = ro + rd * t;
+    vec3 q = mod(p + u_gridSpacing * 0.5, u_gridSpacing) - u_gridSpacing * 0.5;
 
-    // Grid cell position
-    vec3 cellId = floor(p / u_gridSpacing);
-    vec3 q = mod(p, u_gridSpacing) - u_gridSpacing * 0.5;
+    // Pipes along axes
+    float dx = length(q.yz) - u_pipeThickness;
+    float dy = length(q.xz) - u_pipeThickness;
+    float dz = length(q.xy) - u_pipeThickness;
 
-    // Pipes along axes (cylinders)
-    float pipeR = u_pipeThickness;
-    float dx = length(q.yz) - pipeR;
-    float dy = length(q.xz) - pipeR;
-    float dz = length(q.xy) - pipeR;
+    // Ball joints
+    float ball = length(q) - u_jointSize;
 
-    // Elbow joints (quarter torus at corners)
-    float elbowR = u_gridSpacing * 0.25;  // Major radius
-    float jointR = pipeR * 1.1;            // Minor radius (slightly larger)
+    float d = min(min(min(dx, dy), dz), ball);
 
-    // Create elbow joints at each axis-aligned corner
-    vec3 corner = sign(q) * (u_gridSpacing * 0.5 - elbowR);
-    vec3 qc = q - corner;
-
-    // XY plane elbow
-    float elbowXY = sdTorus(qc.xzy, vec2(elbowR, jointR));
-    // XZ plane elbow
-    float elbowXZ = sdTorus(qc, vec2(elbowR, jointR));
-    // YZ plane elbow
-    float elbowYZ = sdTorus(qc.yxz, vec2(elbowR, jointR));
-
-    float elbow = min(min(elbowXY, elbowXZ), elbowYZ);
-
-    // Ball joints at intersections (for caps and multi-way joints)
-    float ball = length(q) - jointR * 1.3;
-
-    float d = min(min(min(min(dx, dy), dz), elbow), ball);
-
-    if (d < 0.004) {
-      // Compute normal via gradient
-      vec2 e = vec2(0.005, 0.0);
-      vec3 p2 = p;
-
-      // Simplified normal calculation
-      vec3 n = normalize(vec3(
-        length(mod(p2+e.xyy, u_gridSpacing) - u_gridSpacing*0.5) - length(mod(p2-e.xyy, u_gridSpacing) - u_gridSpacing*0.5),
-        length(mod(p2+e.yxy, u_gridSpacing) - u_gridSpacing*0.5) - length(mod(p2-e.yxy, u_gridSpacing) - u_gridSpacing*0.5),
-        length(mod(p2+e.yyx, u_gridSpacing) - u_gridSpacing*0.5) - length(mod(p2-e.yyx, u_gridSpacing) - u_gridSpacing*0.5)
+    if (d < 0.005) {  // Larger threshold for faster convergence
+      // Normal approximation
+      vec2 e = vec2(0.01, 0.0);
+      vec3 n = normalize(d - vec3(
+        min(min(length((q+e.xyy).yz)-u_pipeThickness, length((q+e.xyy).xz)-u_pipeThickness), min(length((q+e.xyy).xy)-u_pipeThickness, length(q+e.xyy)-u_jointSize)),
+        min(min(length((q+e.yxy).yz)-u_pipeThickness, length((q+e.yxy).xz)-u_pipeThickness), min(length((q+e.yxy).xy)-u_pipeThickness, length(q+e.yxy)-u_jointSize)),
+        min(min(length((q+e.yyx).yz)-u_pipeThickness, length((q+e.yyx).xz)-u_pipeThickness), min(length((q+e.yyx).xy)-u_pipeThickness, length(q+e.yyx)-u_jointSize))
       ));
 
-      // Lighting (classic OpenGL style)
-      vec3 light1 = normalize(vec3(0.5, 1.0, 0.3));
-      vec3 light2 = normalize(vec3(-0.3, 0.5, -0.5));
+      vec3 light = normalize(vec3(1.0, 2.0, -1.0));
+      float diff = max(dot(n, light), 0.0) * 0.7 + 0.3;
+      float spec = pow(max(dot(reflect(-light, n), -rd), 0.0), u_shininess);
 
-      float diff = max(dot(n, light1), 0.0) * 0.6 + max(dot(n, light2), 0.0) * 0.3 + 0.2;
-      float spec = pow(max(dot(reflect(-light1, n), -rd), 0.0), u_shininess) * 0.5;
+      // Color by grid cell
+      vec3 cellId = floor((p + u_gridSpacing * 0.5) / u_gridSpacing);
+      vec3 pipeCol = 0.5 + 0.5 * cos(6.28 * (hash(cellId.xy + cellId.z) * u_colorVariety + u_time * u_colorSpeed + vec3(0.0, 0.33, 0.67)));
 
-      // Get pipe color based on cell
-      float colorId = hash(cellId.xy + cellId.z * 0.1);
-      vec3 baseCol = getPipeColor(colorId);
-
-      // Metallic shading
-      hitColor = baseCol * diff + vec3(1.0) * spec;
-
-      // Add slight color variation for visual interest
-      hitColor += 0.05 * cos(cellId * 2.0 + u_time * u_colorSpeed);
-
+      col = pipeCol * diff + vec3(1.0) * spec * 0.3;
       break;
     }
-
-    t += d * 0.95;
-    if (t > 20.0) break;
+    t += d;  // Full step size (was 0.9), safe due to SDF
+    if (t > 25.0) break;  // Reduced max distance
   }
-
-  // Distance fog (like original)
-  col = mix(hitColor, col, smoothstep(5.0, 20.0, t));
 
   fragColor = vec4(col, 1.0);
 }`, {
   name: '3D Pipes',
-  desc: 'Classic Windows 95 pipes with metallic colors',
+  desc: 'Building pipe networks with ball joints',
   settings: {
-    pipeThickness: { value: 0.12, min: 0.05, max: 0.25, step: 0.01, label: 'Pipe Thickness' },
-    camSpeed: { value: 0.15, min: 0.05, max: 0.4, step: 0.01, label: 'Camera Speed' },
-    camDistance: { value: 6.0, min: 3.0, max: 12.0, step: 0.5, label: 'Camera Distance' },
-    gridSpacing: { value: 2.5, min: 1.5, max: 4.0, step: 0.1, label: 'Pipe Spacing' },
-    colorSpeed: { value: 0.0, min: 0.0, max: 0.3, step: 0.01, label: 'Color Shift' },
-    shininess: { value: 32.0, min: 8.0, max: 64.0, step: 4.0, label: 'Shininess' }
+    pipeThickness: { value: 0.12, min: 0.05, max: 0.3, step: 0.01, label: 'Pipe Thickness' },
+    jointSize: { value: 0.18, min: 0.1, max: 0.4, step: 0.01, label: 'Joint Size' },
+    camSpeed: { value: 0.2, min: 0.05, max: 0.5, step: 0.01, label: 'Camera Speed' },
+    camDistance: { value: 8.0, min: 4.0, max: 15.0, step: 0.5, label: 'Camera Distance' },
+    gridSpacing: { value: 2.0, min: 1.0, max: 4.0, step: 0.1, label: 'Pipe Density' },
+    colorSpeed: { value: 0.0, min: 0.0, max: 0.5, step: 0.01, label: 'Color Animation' },
+    colorVariety: { value: 1.0, min: 0.2, max: 2.0, step: 0.1, label: 'Color Variety' },
+    shininess: { value: 16.0, min: 2.0, max: 64.0, step: 2.0, label: 'Shininess' }
   }
 });
 
 register('maze', `
-// Windows 95 3D Maze - first-person navigation
-// Based on original Microsoft OpenGL screensaver
-
-// Maze cell structure using hash - creates connected corridors
-float mazeWall(vec2 cell, int dir) {
-  // dir: 0=right, 1=up, 2=left, 3=down
-  // Use hash to deterministically generate maze structure
-  float h = hash(cell * 0.37 + float(dir) * 17.31);
-
-  // Ensure connectivity - at least 2 openings per cell
-  float h2 = hash(cell * 0.73);
-  if (dir == int(h2 * 4.0)) return 0.0; // Always one opening
-  if (dir == int(fract(h2 * 7.0) * 4.0)) return 0.0; // Second opening
-
-  return step(0.55, h); // Additional random walls
-}
-
 void main() {
   vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
 
-  float t = u_time * u_speed;
+  // Windows 95 Maze: First-person navigation through corridors
+  float t = u_time * 0.8;
 
-  // Navigate through maze - simulated right-hand rule
-  // Pre-computed path segments
-  float segLen = 2.0; // Cell size
-  float totalT = t;
-  float seg = floor(totalT / 1.5);
-  float segT = fract(totalT / 1.5);
+  // Navigate through maze - periodic turns at intersections
+  float segment = floor(t / 3.0);
+  float segT = fract(t / 3.0) * 3.0;
 
-  // Build path by following right-hand rule
-  vec2 pos = vec2(0.0);
-  float dir = 0.0; // 0=+x, 1=+z, 2=-x, 3=-z
-  vec2 dirs[4];
-  dirs[0] = vec2(1.0, 0.0);
-  dirs[1] = vec2(0.0, 1.0);
-  dirs[2] = vec2(-1.0, 0.0);
-  dirs[3] = vec2(0.0, -1.0);
+  // Position along corridor
+  float turn = hash(vec2(segment, 0.0));
+  vec3 ro = vec3(0.0, 0.4, segT * 2.0);  // Eye height 0.4
 
-  // Simulate path for 'seg' steps
-  for (int i = 0; i < 50; i++) {
-    if (float(i) >= seg) break;
+  // Slight head bob like original
+  ro.y += sin(t * 4.0) * 0.02;
 
-    // Right-hand rule: try right, then forward, then left, then back
-    float h = hash(pos + float(i) * 0.1);
-    int tryDir = int(mod(dir + 1.0, 4.0)); // Right first
-
-    for (int j = 0; j < 4; j++) {
-      int checkDir = int(mod(float(tryDir) - float(j) + 4.0, 4.0));
-      if (mazeWall(pos, checkDir) < 0.5) {
-        dir = float(checkDir);
-        pos += dirs[checkDir];
-        break;
-      }
-    }
-  }
-
-  // Interpolate within current segment
-  vec2 nextPos = pos + dirs[int(dir)] * segT;
-
-  // Camera position
-  vec3 ro = vec3(nextPos.x * segLen + segLen * 0.5, 0.45, nextPos.y * segLen + segLen * 0.5);
-
-  // Head bob like original
-  ro.y += sin(t * 5.0) * 0.015 * u_headBob;
-
-  // Look direction based on movement
-  float lookAng = dir * 1.5708; // 90 degrees per direction
-  // Smooth turn at segment transitions
-  float turnSmooth = smoothstep(0.8, 1.0, segT) * 0.3;
-  vec3 lookDir = vec3(sin(lookAng), 0.0, cos(lookAng));
-
-  vec3 fwd = normalize(lookDir);
-  vec3 right = normalize(cross(vec3(0,1,0), fwd));
-  vec3 up = cross(fwd, right);
-  vec3 rd = normalize(uv.x * right * 0.9 + (uv.y - 0.05) * up * 0.9 + fwd);
+  vec3 rd = normalize(vec3(uv.x * 0.8, uv.y * 0.8 - 0.1, 1.0));
 
   vec3 col = vec3(0.0);
   float dist = 0.0;
 
-  for (int i = 0; i < 60; i++) {
+  for (int i = 0; i < 80; i++) {
     vec3 p = ro + rd * dist;
 
-    // Floor and ceiling
+    // Floor at y=0
     float floorD = p.y;
+
+    // Ceiling at y=1
     float ceilD = 1.0 - p.y;
 
-    // Maze walls
-    vec2 cellPos = floor(p.xz / segLen);
-    vec2 local = mod(p.xz, segLen) - segLen * 0.5;
+    // Walls: maze corridors based on grid
+    vec2 cell = floor(p.xz / 2.0);
+    vec2 local = mod(p.xz, 2.0) - 1.0;
 
-    // Wall thickness
-    float wallW = 0.15;
+    // Maze walls with passages
+    float h1 = hash(cell);
+    float h2 = hash(cell + vec2(1.0, 0.0));
+    float h3 = hash(cell + vec2(0.0, 1.0));
+
     float wallD = 100.0;
 
-    // Check each wall of the cell
-    // Right wall (+X)
-    if (mazeWall(cellPos, 0) > 0.5) {
-      wallD = min(wallD, segLen * 0.5 - wallW - local.x);
+    // Left/right walls
+    if (h1 < 0.6) {
+      wallD = min(wallD, abs(local.x) - 0.9);
     }
-    // Front wall (+Z)
-    if (mazeWall(cellPos, 1) > 0.5) {
-      wallD = min(wallD, segLen * 0.5 - wallW - local.y);
-    }
-    // Left wall (-X)
-    if (mazeWall(cellPos, 2) > 0.5) {
-      wallD = min(wallD, local.x + segLen * 0.5 - wallW);
-    }
-    // Back wall (-Z)
-    if (mazeWall(cellPos, 3) > 0.5) {
-      wallD = min(wallD, local.y + segLen * 0.5 - wallW);
+    // Front/back walls with openings
+    if (h2 < 0.5) {
+      float frontWall = abs(local.y + 1.0) - 0.1;
+      if (abs(local.x) > 0.35) wallD = min(wallD, frontWall);
     }
 
-    float d = min(min(floorD, ceilD), max(0.001, wallD));
+    wallD = max(wallD, -floorD);
+    wallD = max(wallD, -ceilD);
 
-    if (d < 0.004) {
+    float d = min(min(floorD, ceilD), abs(wallD));
+
+    if (d < 0.005) {
       vec3 hitP = p;
 
       if (floorD < 0.01) {
-        // Floor: red/maroon carpet like original
-        vec2 floorUV = fract(hitP.xz * 1.5);
-        float carpet = 0.8 + fbm(hitP.xz * 8.0) * 0.2;
-        col = vec3(0.45, 0.08, 0.08) * carpet;
+        // Floor: red carpet with texture like Win95
+        vec2 floorUV = fract(hitP.xz * 2.0);
+        float pattern = step(0.05, min(floorUV.x, floorUV.y));
+        col = vec3(0.5, 0.1, 0.1) * (0.8 + pattern * 0.2);
       } else if (ceilD < 0.01) {
-        // Ceiling: white acoustic tiles
-        vec2 ceilUV = fract(hitP.xz * 1.0);
-        float edge = step(0.03, ceilUV.x) * step(0.03, 1.0-ceilUV.x) *
-                     step(0.03, ceilUV.y) * step(0.03, 1.0-ceilUV.y);
-        col = vec3(0.85, 0.85, 0.8) * (0.7 + edge * 0.3);
+        // Ceiling: white tiles
+        vec2 ceilUV = fract(hitP.xz * 2.0);
+        float tiles = step(0.02, min(ceilUV.x, ceilUV.y)) * step(0.02, min(1.0-ceilUV.x, 1.0-ceilUV.y));
+        col = vec3(0.9, 0.9, 0.85) * (0.7 + tiles * 0.3);
       } else {
-        // Walls: brick texture like original
+        // Walls: stone/brick texture
         vec2 wallUV;
-        vec3 n = vec3(0.0);
         if (abs(local.x) > abs(local.y)) {
           wallUV = vec2(hitP.z, hitP.y);
-          n = vec3(sign(local.x), 0.0, 0.0);
         } else {
           wallUV = vec2(hitP.x, hitP.y);
-          n = vec3(0.0, 0.0, sign(local.y));
         }
 
-        // Authentic brick pattern
-        vec2 brickSize = vec2(0.4, 0.2);
-        vec2 brickUV = wallUV / brickSize;
+        // Brick pattern
+        vec2 brickUV = wallUV * vec2(2.0, 4.0);
         float row = floor(brickUV.y);
-        brickUV.x += mod(row, 2.0) * 0.5; // Offset alternate rows
+        brickUV.x += mod(row, 2.0) * 0.5;
         vec2 brickF = fract(brickUV);
+        float brick = step(0.05, brickF.x) * step(0.1, brickF.y);
 
-        // Mortar lines
-        float mortarX = smoothstep(0.0, 0.08, brickF.x) * smoothstep(1.0, 0.92, brickF.x);
-        float mortarY = smoothstep(0.0, 0.12, brickF.y) * smoothstep(1.0, 0.88, brickF.y);
-        float mortar = mortarX * mortarY;
-
-        // Brick color with variation
-        vec3 brickCol = vec3(0.6, 0.35, 0.25);
-        brickCol += (hash(floor(brickUV)) - 0.5) * 0.15;
-        vec3 mortarCol = vec3(0.5, 0.48, 0.45);
-
-        col = mix(mortarCol, brickCol, mortar);
-
-        // Simple lighting
-        float light = 0.6 + 0.4 * max(dot(n, normalize(vec3(0.3, 0.5, 0.4))), 0.0);
-        col *= light;
+        col = vec3(0.55, 0.45, 0.35) * (0.7 + brick * 0.3);
+        col += hash(floor(brickUV)) * 0.08 - 0.04; // Variation
       }
 
-      // Distance fog (classic green tint)
-      float fog = exp(-dist * 0.12);
-      col = mix(vec3(0.08, 0.12, 0.08), col, fog);
+      // Distance fog (green tint like original)
+      float fog = exp(-dist * 0.15);
+      col = mix(vec3(0.1, 0.15, 0.1), col, fog);
       break;
     }
 
-    dist += d * 0.9;
-    if (dist > 20.0) {
-      col = vec3(0.08, 0.12, 0.08);
+    dist += d * 0.8;
+    if (dist > 25.0) {
+      col = vec3(0.1, 0.15, 0.1);  // Fog color
       break;
     }
   }
 
   fragColor = vec4(col, 1.0);
-}`, {
-  name: '3D Maze',
-  desc: 'First-person maze navigation like Windows 95',
-  settings: {
-    speed: { value: 0.6, min: 0.2, max: 1.5, step: 0.1, label: 'Walk Speed' },
-    headBob: { value: 1.0, min: 0.0, max: 2.0, step: 0.1, label: 'Head Bob' }
-  }
-});
+}`, { name: '3D Maze', desc: 'First-person maze walkthrough' });
 
 register('flowerbox', `
 // Windows 95 Flower Box: morphing textured polyhedra
