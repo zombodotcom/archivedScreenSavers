@@ -363,9 +363,12 @@ class MiniPreview {
     this.effectIds = effectIds;
     this.currentIndex = 0;
     this.time = 0;
+    this.visible = false; // Track visibility for perf
+    this.lastFrame = 0;   // For frame throttling
 
     this.gl = canvas.getContext('webgl2', {
-      alpha: false, antialias: false, depth: false, preserveDrawingBuffer: true
+      alpha: false, antialias: false, depth: false, preserveDrawingBuffer: true,
+      powerPreference: 'low-power' // Prefer integrated GPU for previews
     });
 
     if (!this.gl) return;
@@ -383,10 +386,17 @@ class MiniPreview {
 
     this.resize();
     this.compileEffect();
+
+    // Use intersection observer to only render when visible
+    this.observer = new IntersectionObserver((entries) => {
+      this.visible = entries[0].isIntersecting;
+    }, { threshold: 0.1 });
+    this.observer.observe(canvas);
   }
 
   resize() {
-    const dpr = Math.min(devicePixelRatio, 1.5);
+    // Use lower resolution for previews to save GPU
+    const dpr = 1; // Fixed 1x for mini previews (was 1.5x)
     this.canvas.width = this.canvas.clientWidth * dpr;
     this.canvas.height = this.canvas.clientHeight * dpr;
     this.gl?.viewport(0, 0, this.canvas.width, this.canvas.height);
@@ -475,9 +485,12 @@ void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }`;
     if (!this.gl || !this.prog) return;
     this.running = true;
     this.destroyed = false;
+    this.visible = true; // Assume visible initially
 
     let last = performance.now();
     let switchTimer = 0;
+    const TARGET_FPS = 15; // Throttle to 15fps for mini previews
+    const FRAME_INTERVAL = 1000 / TARGET_FPS;
 
     const loop = (now) => {
       // Stop immediately if destroyed
@@ -487,6 +500,14 @@ void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }`;
       if (this.gl.isContextLost()) return;
 
       this.rafId = requestAnimationFrame(loop);
+
+      // Skip rendering if not visible (saves GPU)
+      if (!this.visible) return;
+
+      // Throttle frame rate
+      const elapsed = now - this.lastFrame;
+      if (elapsed < FRAME_INTERVAL) return;
+      this.lastFrame = now - (elapsed % FRAME_INTERVAL);
 
       const dt = Math.min((now - last) / 1000, 0.1);
       last = now;
@@ -501,7 +522,8 @@ void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }`;
         this.compileEffect();
       }
 
-      if (!this.prog || !this.gl) return;
+      // Double-check destroyed state right before render to avoid race conditions
+      if (this.destroyed || !this.prog || !this.gl) return;
 
       const gl = this.gl;
       gl.useProgram(this.prog);
@@ -524,16 +546,30 @@ void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }`;
       this.rafId = null;
     }
 
-    if (this.gl && !this.gl.isContextLost()) {
-      if (this.prog) this.gl.deleteProgram(this.prog);
-      if (this.quadBuf) this.gl.deleteBuffer(this.quadBuf);
-      if (this.vao) this.gl.deleteVertexArray(this.vao);
-      // Properly release WebGL context
-      const ext = this.gl.getExtension('WEBGL_lose_context');
-      if (ext) ext.loseContext();
+    // Clean up intersection observer
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
     }
+
+    // Store refs and null them BEFORE deleting to prevent race conditions
+    const gl = this.gl;
+    const prog = this.prog;
+    const quadBuf = this.quadBuf;
+    const vao = this.vao;
     this.gl = null;
     this.prog = null;
+    this.quadBuf = null;
+    this.vao = null;
+
+    if (gl && !gl.isContextLost()) {
+      if (prog) gl.deleteProgram(prog);
+      if (quadBuf) gl.deleteBuffer(quadBuf);
+      if (vao) gl.deleteVertexArray(vao);
+      // Properly release WebGL context
+      const ext = gl.getExtension('WEBGL_lose_context');
+      if (ext) ext.loseContext();
+    }
 
     // Remove canvas from DOM
     if (this.canvas && this.canvas.parentNode) {

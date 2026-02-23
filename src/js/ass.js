@@ -30,6 +30,7 @@ class ASS {
     this.time = 0;
     this.running = false;
     this.settingsValues = {};  // Current values for effect settings
+    this._listeners = {};   // Track event listeners for cleanup
   }
 
   // Initialize on a canvas
@@ -81,7 +82,9 @@ class ASS {
     this.pending = [];
 
     this.resize();
-    window.addEventListener('resize', () => this.resize());
+
+    // Clean up old listeners before adding new ones
+    this._removeListeners();
 
     // Initialize mouse/touch tracking for u_mouse uniform
     this.mouseX = 0;
@@ -94,25 +97,40 @@ class ASS {
       this.mouseY = ((rect.height - (clientY - rect.top)) / rect.height) * this.canvas.height;
     };
 
-    // Mouse events (desktop)
-    this.canvas.addEventListener('mousemove', (e) => {
-      updatePointer(e.clientX, e.clientY);
-    });
-
-    // Touch events (mobile) - passive for scroll performance
-    this.canvas.addEventListener('touchstart', (e) => {
+    // Store listener references for cleanup
+    this._listeners.resize = () => this.resize();
+    this._listeners.mousemove = (e) => updatePointer(e.clientX, e.clientY);
+    this._listeners.touchstart = (e) => {
       if (e.touches.length === 1) {
         updatePointer(e.touches[0].clientX, e.touches[0].clientY);
       }
-    }, { passive: true });
-
-    this.canvas.addEventListener('touchmove', (e) => {
+    };
+    this._listeners.touchmove = (e) => {
       if (e.touches.length === 1) {
         updatePointer(e.touches[0].clientX, e.touches[0].clientY);
       }
-    }, { passive: true });
+    };
+
+    // Add event listeners
+    window.addEventListener('resize', this._listeners.resize);
+    this.canvas.addEventListener('mousemove', this._listeners.mousemove);
+    this.canvas.addEventListener('touchstart', this._listeners.touchstart, { passive: true });
+    this.canvas.addEventListener('touchmove', this._listeners.touchmove, { passive: true });
 
     return true;
+  }
+
+  // Remove all event listeners
+  _removeListeners() {
+    if (this._listeners.resize) {
+      window.removeEventListener('resize', this._listeners.resize);
+    }
+    if (this.canvas && this._listeners.mousemove) {
+      this.canvas.removeEventListener('mousemove', this._listeners.mousemove);
+      this.canvas.removeEventListener('touchstart', this._listeners.touchstart);
+      this.canvas.removeEventListener('touchmove', this._listeners.touchmove);
+    }
+    this._listeners = {};
   }
 
   resize() {
@@ -318,7 +336,29 @@ void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }`;
     requestAnimationFrame(loop);
   }
 
-  stop() { this.running = false; }
+  stop() {
+    this.running = false;
+  }
+
+  // Full cleanup - call when done with this instance
+  destroy() {
+    this.stop();
+    this._removeListeners();
+
+    // Clean up WebGL resources
+    if (this.gl) {
+      for (const effect of Object.values(this.effects)) {
+        if (effect.prog) this.gl.deleteProgram(effect.prog);
+      }
+      if (this.quadBuf) this.gl.deleteBuffer(this.quadBuf);
+      if (this.vao) this.gl.deleteVertexArray(this.vao);
+    }
+
+    this.effects = {};
+    this.current = null;
+    this.gl = null;
+    this.canvas = null;
+  }
 
   // List all effects
   list() { return Object.values(this.effects); }

@@ -253,7 +253,7 @@ void main() {
 
   // Start ray a bit away from camera to avoid clipping
   float t = 0.5;
-  for (int i = 0; i < 80; i++) {
+  for (int i = 0; i < 60; i++) {  // Reduced from 80 iterations
     vec3 p = ro + rd * t;
     vec3 q = mod(p + u_gridSpacing * 0.5, u_gridSpacing) - u_gridSpacing * 0.5;
 
@@ -267,7 +267,7 @@ void main() {
 
     float d = min(min(min(dx, dy), dz), ball);
 
-    if (d < 0.002) {
+    if (d < 0.005) {  // Larger threshold for faster convergence
       // Normal approximation
       vec2 e = vec2(0.01, 0.0);
       vec3 n = normalize(d - vec3(
@@ -287,8 +287,8 @@ void main() {
       col = pipeCol * diff + vec3(1.0) * spec * 0.3;
       break;
     }
-    t += d * 0.9;
-    if (t > 30.0) break;
+    t += d;  // Full step size (was 0.9), safe due to SDF
+    if (t > 25.0) break;  // Reduced max distance
   }
 
   fragColor = vec4(col, 1.0);
@@ -4002,9 +4002,9 @@ void main() {
 }`, { name: 'Frost & Fire', desc: 'Colors emanating from center' });
 
 register('pipes_ag', `
-#define MAX_STEPS 100
-#define MAX_DIST 50.0
-#define SURF_DIST 0.01
+#define MAX_STEPS 60
+#define MAX_DIST 35.0
+#define SURF_DIST 0.015
 
 mat2 rot(float a) {
     float s=sin(a), c=cos(a);
