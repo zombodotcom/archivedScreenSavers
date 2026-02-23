@@ -147,6 +147,10 @@ class ASS {
    * @param {object} opts - Optional: { name, desc }
    */
   add(id, shader, opts = {}) {
+    // Store raw shader for mini previews
+    if (!window._assEffects) window._assEffects = {};
+    window._assEffects[id] = shader;
+
     if (!this.gl) {
       // Defer until init
       this.pending.push({ id, shader, opts });

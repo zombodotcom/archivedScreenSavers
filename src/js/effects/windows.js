@@ -215,80 +215,85 @@ void main() {
   fragColor = vec4(col, 1.0);
 }`, { name: 'Mystify', desc: 'Bouncing polygon lines with trails' });
 
-register('pipes', `
+// Windows 95 authentic 3D Pipes - solid metallic colors, black background
+register('pipes_win95', `
+// Classic Windows 95 metallic colors
+vec3 getWin95Color(float id) {
+  int c = int(mod(id * 7.0, 8.0));
+  if (c == 0) return vec3(0.75, 0.0, 0.0);    // Red
+  if (c == 1) return vec3(0.0, 0.5, 0.0);     // Green
+  if (c == 2) return vec3(0.0, 0.0, 0.75);    // Blue
+  if (c == 3) return vec3(0.75, 0.75, 0.0);   // Yellow
+  if (c == 4) return vec3(0.5, 0.0, 0.5);     // Purple
+  if (c == 5) return vec3(0.0, 0.5, 0.5);     // Cyan
+  if (c == 6) return vec3(0.75, 0.4, 0.0);    // Orange
+  return vec3(0.7, 0.7, 0.7);                  // Silver
+}
+
 void main() {
   vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
-  vec3 col = vec3(0.0);
+  vec3 col = vec3(0.0); // Black background like Win95
 
-  float camT = u_time * u_camSpeed;
+  float t = u_time * 0.15;
 
-  // Camera position - offset to stay between pipe cells
-  vec3 ro = vec3(
-    sin(camT) * u_camDistance + 0.5,
-    sin(camT * 0.7) * (u_camDistance * 0.4) + 0.5,
-    cos(camT) * u_camDistance + 0.5
-  );
-  vec3 ta = vec3(0.5);
+  // Camera orbits around center
+  vec3 ro = vec3(sin(t) * 6.0, sin(t * 0.7) * 3.0 + 2.0, cos(t) * 6.0);
+  vec3 ta = vec3(0.0, 0.0, 0.0);
   vec3 fwd = normalize(ta - ro);
   vec3 right = normalize(cross(vec3(0,1,0), fwd));
   vec3 up = cross(fwd, right);
   vec3 rd = normalize(uv.x * right + uv.y * up + 1.5 * fwd);
 
-  // Start ray a bit away from camera to avoid clipping
-  float t = 0.5;
-  for (int i = 0; i < 60; i++) {  // Reduced from 80 iterations
-    vec3 p = ro + rd * t;
-    vec3 q = mod(p + u_gridSpacing * 0.5, u_gridSpacing) - u_gridSpacing * 0.5;
+  float dist = 0.0;
+  for (int i = 0; i < 50; i++) {
+    vec3 p = ro + rd * dist;
 
-    // Pipes along axes
-    float dx = length(q.yz) - u_pipeThickness;
-    float dy = length(q.xz) - u_pipeThickness;
-    float dz = length(q.xy) - u_pipeThickness;
+    // Grid cell
+    float spacing = 1.5;
+    vec3 cellId = floor(p / spacing);
+    vec3 q = mod(p, spacing) - spacing * 0.5;
 
-    // Ball joints
-    float ball = length(q) - u_jointSize;
+    // Pipe radius
+    float r = 0.12;
+
+    // Pipes along each axis
+    float dx = length(q.yz) - r;
+    float dy = length(q.xz) - r;
+    float dz = length(q.xy) - r;
+
+    // Ball joints at intersections
+    float ball = length(q) - r * 1.5;
 
     float d = min(min(min(dx, dy), dz), ball);
 
-    if (d < 0.005) {  // Larger threshold for faster convergence
-      // Normal approximation
+    if (d < 0.003) {
+      // Simple normal
       vec2 e = vec2(0.01, 0.0);
-      vec3 n = normalize(d - vec3(
-        min(min(length((q+e.xyy).yz)-u_pipeThickness, length((q+e.xyy).xz)-u_pipeThickness), min(length((q+e.xyy).xy)-u_pipeThickness, length(q+e.xyy)-u_jointSize)),
-        min(min(length((q+e.yxy).yz)-u_pipeThickness, length((q+e.yxy).xz)-u_pipeThickness), min(length((q+e.yxy).xy)-u_pipeThickness, length(q+e.yxy)-u_jointSize)),
-        min(min(length((q+e.yyx).yz)-u_pipeThickness, length((q+e.yyx).xz)-u_pipeThickness), min(length((q+e.yyx).xy)-u_pipeThickness, length(q+e.yyx)-u_jointSize))
+      vec3 n = normalize(vec3(d) - vec3(
+        min(min(length((q+e.xyy).yz), length((q+e.xyy).xz)), min(length((q+e.xyy).xy), length(q+e.xyy))),
+        min(min(length((q+e.yxy).yz), length((q+e.yxy).xz)), min(length((q+e.yxy).xy), length(q+e.yxy))),
+        min(min(length((q+e.yyx).yz), length((q+e.yyx).xz)), min(length((q+e.yyx).xy), length(q+e.yyx)))
       ));
 
-      vec3 light = normalize(vec3(1.0, 2.0, -1.0));
-      float diff = max(dot(n, light), 0.0) * 0.7 + 0.3;
-      float spec = pow(max(dot(reflect(-light, n), -rd), 0.0), u_shininess);
+      // Classic OpenGL lighting
+      vec3 light = normalize(vec3(1.0, 1.0, -0.5));
+      float diff = max(dot(n, light), 0.0) * 0.6 + 0.4;
+      float spec = pow(max(dot(reflect(-light, n), -rd), 0.0), 32.0) * 0.5;
 
-      // Color by grid cell
-      vec3 cellId = floor((p + u_gridSpacing * 0.5) / u_gridSpacing);
-      vec3 pipeCol = 0.5 + 0.5 * cos(6.28 * (hash(cellId.xy + cellId.z) * u_colorVariety + u_time * u_colorSpeed + vec3(0.0, 0.33, 0.67)));
+      // Solid metallic color per pipe segment
+      float colorId = hash(cellId.xy + cellId.z * 0.37);
+      vec3 pipeCol = getWin95Color(colorId);
 
-      col = pipeCol * diff + vec3(1.0) * spec * 0.3;
+      col = pipeCol * diff + vec3(1.0) * spec;
       break;
     }
-    t += d;  // Full step size (was 0.9), safe due to SDF
-    if (t > 25.0) break;  // Reduced max distance
+
+    dist += d;
+    if (dist > 20.0) break;
   }
 
   fragColor = vec4(col, 1.0);
-}`, {
-  name: '3D Pipes',
-  desc: 'Building pipe networks with ball joints',
-  settings: {
-    pipeThickness: { value: 0.12, min: 0.05, max: 0.3, step: 0.01, label: 'Pipe Thickness' },
-    jointSize: { value: 0.18, min: 0.1, max: 0.4, step: 0.01, label: 'Joint Size' },
-    camSpeed: { value: 0.2, min: 0.05, max: 0.5, step: 0.01, label: 'Camera Speed' },
-    camDistance: { value: 8.0, min: 4.0, max: 15.0, step: 0.5, label: 'Camera Distance' },
-    gridSpacing: { value: 2.0, min: 1.0, max: 4.0, step: 0.1, label: 'Pipe Density' },
-    colorSpeed: { value: 0.0, min: 0.0, max: 0.5, step: 0.01, label: 'Color Animation' },
-    colorVariety: { value: 1.0, min: 0.2, max: 2.0, step: 0.1, label: 'Color Variety' },
-    shininess: { value: 16.0, min: 2.0, max: 64.0, step: 2.0, label: 'Shininess' }
-  }
-});
+}`, { name: '3D Pipes', desc: 'Windows 95 OpenGL pipes screensaver' });
 
 register('maze', `
 void main() {

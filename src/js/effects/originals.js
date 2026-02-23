@@ -6,8 +6,6 @@ import { ass } from '../ass.js';
 
 const register = (id, shader, opts = {}) => ass.add(id, shader, opts);
 
-register('myeffect', `void main() { ... }`, { name: 'My Effect', desc: '...' });
-
 register('flow', `
 void main() {
   vec2 uv = gl_FragCoord.xy / u_resolution;
@@ -179,6 +177,97 @@ void main() {
 
   fragColor = vec4(col, 1.0);
 }`, { name: 'Fractal Zoom', desc: 'Mandelbrot deep zoom' });
+
+// aSS Original 3D Pipes - colorful modern raymarched pipes
+register('pipes', `
+#define MAX_STEPS 80
+#define MAX_DIST 30.0
+#define SURF_DIST 0.01
+
+mat2 rot(float a) {
+    float s=sin(a), c=cos(a);
+    return mat2(c, -s, s, c);
+}
+
+float sdCapsule(vec3 p, vec3 a, vec3 b, float r) {
+    vec3 pa = p - a, ba = b - a;
+    float h = clamp(dot(pa,ba)/dot(ba,ba), 0.0, 1.0);
+    return length(pa - ba*h) - r;
+}
+
+float map(vec3 p) {
+    vec3 id = floor(p / 2.0);
+    vec3 q = mod(p, 2.0) - 1.0;
+
+    float d = 1e10;
+
+    // X-axis pipes
+    if (hash(id.yz) > 0.3) {
+        d = min(d, length(q.yz) - 0.08);
+    }
+    // Y-axis pipes
+    if (hash(id.xz + 100.0) > 0.3) {
+        d = min(d, length(q.xz) - 0.08);
+    }
+    // Z-axis pipes
+    if (hash(id.xy + 200.0) > 0.3) {
+        d = min(d, length(q.xy) - 0.08);
+    }
+
+    // Joints at intersections
+    d = min(d, length(q) - 0.12);
+
+    return d;
+}
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy)/u_resolution.y;
+
+    float t = u_time * 0.3;
+    vec3 ro = vec3(sin(t) * 4.0, 2.0 + sin(t * 0.7) * 2.0, t * 2.0);
+    vec3 rd = normalize(vec3(uv, 1.0));
+
+    rd.xy *= rot(sin(t * 0.3) * 0.3);
+    rd.xz *= rot(t * 0.2);
+
+    float d0 = 0.0;
+    vec3 col = vec3(0.02, 0.02, 0.05);
+
+    for(int i=0; i<MAX_STEPS; i++) {
+        vec3 p = ro + rd * d0;
+        float dS = map(p);
+        d0 += dS;
+
+        if(dS < SURF_DIST) {
+            // Normal calculation
+            vec2 e = vec2(0.01, 0.0);
+            vec3 n = normalize(vec3(
+                map(p + e.xyy) - map(p - e.xyy),
+                map(p + e.yxy) - map(p - e.yxy),
+                map(p + e.yyx) - map(p - e.yyx)
+            ));
+
+            // Colorful gradient based on position
+            vec3 id = floor(p / 2.0);
+            vec3 pipeCol = 0.5 + 0.5 * cos(id.x * 0.5 + id.y * 0.7 + id.z * 0.3 + vec3(0, 2, 4) + t);
+
+            // Lighting
+            vec3 light = normalize(vec3(1.0, 1.0, -0.5));
+            float diff = max(dot(n, light), 0.0) * 0.7 + 0.3;
+            float spec = pow(max(dot(reflect(-light, n), -rd), 0.0), 32.0);
+
+            col = pipeCol * diff + vec3(1.0) * spec * 0.4;
+
+            // Distance fog
+            col = mix(col, vec3(0.02, 0.02, 0.05), 1.0 - exp(-d0 * 0.08));
+            break;
+        }
+
+        if(d0 > MAX_DIST) break;
+    }
+
+    fragColor = vec4(col, 1.0);
+}`, { name: '3D Pipes', desc: 'Colorful raymarched pipe network' });
 
 register('pipes_ag', `
 #define MAX_STEPS 60
@@ -818,12 +907,12 @@ void main() {
     
     if (r < 0.3) {
         vec3 p = vec3(uv * 3.0, sqrt(max(0.0, 0.09 - r*r))*3.0);
-        float n = fbm(p * 2.0 - vec3(0.0, 0.0, t * 0.5));
-        
+        float n = fbm(p.xy * 2.0 - vec2(0.0, t * 0.5));
+
         vec3 sunBase = vec3(1.0, 0.2, 0.0);
         vec3 sunHot = vec3(1.0, 0.8, 0.2);
         col = mix(sunBase, sunHot, smoothstep(0.3, 0.7, n));
-        col *= smoothstep(0.1, 0.3, fbm(p * 4.0 + t));
+        col *= smoothstep(0.1, 0.3, fbm(p.xy * 4.0 + t));
         col *= smoothstep(0.3, 0.25, r);
     } else {
         float angle = atan(uv.y, uv.x);

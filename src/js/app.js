@@ -23,7 +23,7 @@ const ERAS = {
     desc: 'Golden age of OpenGL screensavers',
     computer: 'pc-beige',
     brand: 'SVGA',
-    effects: ['pipes', 'maze', 'flowerbox', 'flyingobjects', 'text3d', 'beziers', 'mystify', 'starfield', 'curvescolors', 'channels']
+    effects: ['pipes_win95', 'maze', 'flowerbox', 'flyingobjects', 'text3d', 'beziers', 'mystify', 'starfield', 'curvescolors', 'channels']
   },
   winxp: {
     name: 'Windows XP',
@@ -31,7 +31,7 @@ const ERAS = {
     desc: 'Last classic OpenGL screensaver era',
     computer: 'pc-beige',
     brand: 'LCD',
-    effects: ['windowsxp', 'pipes', 'maze', 'flowerbox', 'text3d', 'starfield', 'mystify']
+    effects: ['windowsxp', 'pipes_win95', 'maze', 'flowerbox', 'text3d', 'starfield', 'mystify']
   },
   winvista: {
     name: 'Windows Vista/7',
