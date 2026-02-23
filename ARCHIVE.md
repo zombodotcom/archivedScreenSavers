@@ -522,6 +522,84 @@ Added/updated:
 
 ---
 
+## Source Code Directory
+
+Where to find actual original source code, official releases, and high-quality recreations.
+
+### Original / Official Source Code
+
+**Windows NT OpenGL Screensavers (3D Pipes, 3D Maze, 3D Flying Objects, 3D Flower Box, 3D Text)**
+Microsoft shipped the actual C source code in the Windows NT 4.0 SDK and Visual C++ 5.0 Professional CD.
+- **SDK path**: `MSTOOLS\SAMPLES\OPENGL\SCRSAVE\`
+- **VC++ 5.0 path**: `devstudio\vc\samples\sdk\opengl\scrsave\`
+- GitHub mirror of the MSDN OpenGL samples: https://github.com/ianhan/MSDN_OPENGL_Samples
+- Full Win32 SDK for NT 4.0 on Internet Archive: https://archive.org/details/nt40_win95_sdk1996
+- BetaArchive discussion with details: https://www.betaarchive.com/forum/viewtopic.php?t=20417
+- The SDK also available at WinWorld: https://winworldpc.com/product/windows-sdk-ddk/nt-40
+
+**XScreenSaver (240+ screensavers — Linux/Unix/macOS/iOS/Android)**
+The single largest open source screensaver collection in existence. Created by Jamie Zawinski (jwz) in 1992, continuously updated. X11 License.
+- Official source tarballs (jwz does NOT do git): https://www.jwz.org/xscreensaver/download.html
+- Latest: `xscreensaver-6.14.tar.gz`
+- Read-only GitHub mirror: https://github.com/Zygo/xscreensaver
+- Complete version history mirror (back to 1.21): https://github.com/djfuq/xscreensaver
+- Windows port (unofficial, jwz hates it): https://github.com/katahiromz/XScreenSaverWin
+- Includes recreations of: Flying Toasters, Pipes, Maze, Matrix rain, Gears, Penrose tiles, 200+ more
+
+**macOS Flurry Screensaver**
+Calum Robinson's original source code. The iconic macOS screensaver that shipped with every Mac from Jaguar (10.2) onward. Written in C + OpenGL.
+- Original macOS source: https://github.com/calumr/flurry
+- Win32 port: https://github.com/plecong/flurry32
+- WebGL port: https://github.com/RoyCurtis/Flurry-WebGL
+- iOS port: https://github.com/satishmaha/Flurry-iOS
+
+**macOS Drift Screensaver (recreation)**
+Open source tribute to the macOS Catalina Drift screensaver. Written in Rust + WebGPU. The original Apple source is proprietary, but the developer got confirmation from an Apple engineer that it's very close.
+- Source: https://github.com/sandydoo/flux
+- Live demo: https://windturbine.design/
+
+### Web-Based Recreations (with source)
+
+**After Dark CSS** — Pure CSS recreations of After Dark modules (Flying Toasters, Fish, Warp, Bouncing Ball, Messages, Globe, Confetti Factory, Rain). MIT license.
+- Source: https://github.com/bryanbraun/after-dark-css
+- Live: https://www.bryanbraun.com/after-dark-css/
+
+**3D Pipes (WebGL/Three.js)** — Faithful browser recreation of Windows 3D Pipes with teapot easter egg.
+- Original by Isaiah Odhner: https://github.com/1j01/pipes
+- Live: https://1j01.github.io/pipes/
+- Fork with enhancements: https://github.com/Alex313031/webgl-pipes
+
+**3D Maze (OpenGL/C)** — Windows 95 Maze screensaver clone.
+- Source: https://github.com/pdr0663/GLMaze (C, OpenGL)
+
+**Starry Night (After Dark)** — Web recreation of the classic pixel-by-pixel cityscape.
+- Source: https://github.com/gaborbata/starry-night
+- Live: https://gaborbata.github.io/starry-night/
+
+**Apple TV Aerial Screensaver** — The macOS aerial flyover videos, ported to Windows.
+- Source: https://github.com/cDima/Aerial
+
+### Rust / Native Recreations
+
+**3D Pipes (Rust)** — Native Rust remake using the three-d crate, logic translated from original NT SDK source.
+- Source: https://github.com/FaceFTW/rust-pipes
+
+### Other Archival Resources
+
+**Windows XP & 98 Screensaver .scr files** — The actual compiled binaries, downloadable from Internet Archive. Still run on modern Windows (copy to System32).
+- Internet Archive: search "Windows XP And 98 Screensavers"
+
+**After Dark** — The original After Dark software is preserved at:
+- WinWorld (After Dark 3.x): https://winworldpc.com/product/after-dark/3x
+- Macintosh Garden (After Dark for OS 9): http://macintoshgarden.org/apps/after-dark-os-9
+- After Dark Classic Set (modern macOS, $8 from Infinisys): https://en.infinisys.co.jp/product/afterdarkclassicset/index.shtml
+
+**Windows 3.1 Screensavers Twitter Bot** — Perl script that runs Win3.1 screensavers in headless DOSBox and posts recordings:
+- Twitter: @dot_scr
+- Context: https://hackaday.com/2019/09/23/windows-3-1-screensavers-now-on-twitter/
+
+---
+
 ## Notes
 
 - **"Blank Screen"** is omitted from most tables after its first appearance per OS, but virtually every OS version included it.

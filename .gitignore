@@ -30,3 +30,13 @@ Thumbs.db
 .claude/
 .playwright-mcp/
 .specstory/
+.cursorindexingignore
+
+# Temp scripts (prevent future accumulation)
+fetch_*.cjs
+fetch_*.js
+find_*.cjs
+find_*.py
+test_*.cjs
+audit.cjs
+*.resolved
