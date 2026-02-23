@@ -4972,4 +4972,692 @@ void main() {
   fragColor = vec4(col, 1.0);
 }`, { name: 'Amiga Ball', desc: 'Iconic checkered bouncing ball' });
 
+// ============================================================================
+// WINDOWS XP
+// ============================================================================
+
+register('windowsxp', `
+// Windows XP Logo - animated flying XP logo
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.0, 0.3, 0.6);  // XP blue gradient
+  float t = u_time;
+
+  // Gradient background
+  col = mix(vec3(0.0, 0.2, 0.5), vec3(0.2, 0.5, 0.8), uv.y + 0.5);
+
+  // Flying XP logo animation
+  float flyPhase = mod(t * 0.3, 6.28318);
+  vec2 logoPos = vec2(sin(flyPhase) * 0.2, cos(flyPhase * 0.7) * 0.15);
+  float logoScale = 0.8 + sin(t * 0.5) * 0.1;
+
+  vec2 p = (uv - logoPos) / logoScale;
+
+  // XP flag shape (4 colored segments)
+  float flag = 0.0;
+
+  // Waving effect
+  float wave = sin(p.x * 5.0 + t * 3.0) * 0.03;
+  p.y += wave;
+
+  // Four quadrants with curves
+  // Red (top-left)
+  vec2 redP = p - vec2(-0.08, 0.05);
+  float red = smoothstep(0.08, 0.06, length(redP * vec2(0.8, 1.2)));
+  red *= step(redP.x, 0.02) * step(-0.02, redP.y);
+
+  // Green (top-right)
+  vec2 greenP = p - vec2(0.08, 0.05);
+  float green = smoothstep(0.08, 0.06, length(greenP * vec2(0.8, 1.2)));
+  green *= step(-0.02, greenP.x) * step(-0.02, greenP.y);
+
+  // Blue (bottom-left)
+  vec2 blueP = p - vec2(-0.08, -0.05);
+  float blue = smoothstep(0.08, 0.06, length(blueP * vec2(0.8, 1.2)));
+  blue *= step(blueP.x, 0.02) * step(blueP.y, 0.02);
+
+  // Yellow (bottom-right)
+  vec2 yellowP = p - vec2(0.08, -0.05);
+  float yellow = smoothstep(0.08, 0.06, length(yellowP * vec2(0.8, 1.2)));
+  yellow *= step(-0.02, yellowP.x) * step(yellowP.y, 0.02);
+
+  col = mix(col, vec3(0.9, 0.2, 0.1), red);
+  col = mix(col, vec3(0.2, 0.7, 0.2), green);
+  col = mix(col, vec3(0.1, 0.3, 0.8), blue);
+  col = mix(col, vec3(0.95, 0.8, 0.1), yellow);
+
+  // Shine/glow effect
+  float shine = exp(-length(p) * 8.0) * 0.3;
+  col += vec3(1.0) * shine;
+
+  // Particle trail
+  for (float i = 0.0; i < 20.0; i++) {
+    float trailT = t - i * 0.05;
+    vec2 trailPos = vec2(sin(mod(trailT * 0.3, 6.28318)) * 0.2, cos(mod(trailT * 0.3, 6.28318) * 0.7) * 0.15);
+    float trail = smoothstep(0.015, 0.0, length(uv - trailPos - vec2(hash(vec2(i, 0.0)) - 0.5, hash(vec2(i, 1.0)) - 0.5) * 0.1));
+    col += vec3(0.5, 0.7, 1.0) * trail * (1.0 - i / 20.0) * 0.3;
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Windows XP', desc: 'Animated XP logo' });
+
+register('windowsenergy', `
+// Windows Vista Energy - animated Windows logo energy effect
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.0);
+  float t = u_time;
+
+  // Dark gradient background
+  col = mix(vec3(0.0, 0.02, 0.05), vec3(0.0, 0.0, 0.02), length(uv));
+
+  // Energy particles orbiting
+  for (float i = 0.0; i < 50.0; i++) {
+    float angle = i / 50.0 * 6.28318 + t * (0.5 + hash(vec2(i, 0.0)) * 0.5);
+    float radius = 0.15 + sin(t * 2.0 + i) * 0.05;
+    float z = sin(angle * 2.0 + t) * 0.3;
+
+    vec2 particlePos = vec2(cos(angle), sin(angle)) * radius;
+    particlePos *= 1.0 + z * 0.2;  // Depth effect
+
+    float d = length(uv - particlePos);
+    float particle = exp(-d * 50.0);
+
+    vec3 particleCol = mix(vec3(0.2, 0.5, 1.0), vec3(0.0, 1.0, 0.5), hash(vec2(i, 1.0)));
+    particleCol = mix(particleCol, vec3(1.0, 0.8, 0.2), sin(t + i) * 0.5 + 0.5);
+
+    col += particleCol * particle * (0.5 + z * 0.5);
+  }
+
+  // Central Windows logo silhouette
+  vec2 p = uv * 3.0;
+  float logo = 0.0;
+
+  // Four window panes
+  for (float i = 0.0; i < 4.0; i++) {
+    vec2 offset = vec2(mod(i, 2.0) - 0.5, floor(i / 2.0) - 0.5) * 0.5;
+    float pane = max(abs(p.x - offset.x * 1.2) - 0.2, abs(p.y - offset.y * 1.2) - 0.18);
+    // Perspective skew
+    pane = max(pane, (p.x + p.y * 0.3) * 0.3 - 0.4);
+    logo = max(logo, smoothstep(0.02, 0.0, pane));
+  }
+
+  // Glow around logo
+  float glow = exp(-length(uv) * 4.0);
+  col += vec3(0.1, 0.3, 0.6) * glow;
+
+  // Energy pulse
+  float pulse = sin(t * 3.0) * 0.5 + 0.5;
+  col *= 0.8 + pulse * 0.4;
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Windows Energy', desc: 'Vista-style energy effect' });
+
+// ============================================================================
+// NeXTSTEP
+// ============================================================================
+
+register('backspace', `
+// NeXTSTEP BackSpace - abstract geometric patterns
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.0);
+  float t = u_time * 0.5;
+
+  // Rotating cubes in 3D space
+  for (float i = 0.0; i < 8.0; i++) {
+    float angle = t + i * 0.785;
+    float radius = 0.2 + i * 0.03;
+
+    // 3D rotation
+    float cosA = cos(angle), sinA = sin(angle);
+    float cosB = cos(angle * 0.7), sinB = sin(angle * 0.7);
+
+    vec3 cubePos = vec3(cos(i * 1.5) * radius, sin(i * 1.2) * radius, sin(i * 0.8 + t) * 0.2);
+
+    // Rotate
+    float x1 = cubePos.x * cosA - cubePos.z * sinA;
+    float z1 = cubePos.x * sinA + cubePos.z * cosA;
+    float y1 = cubePos.y * cosB - z1 * sinB;
+    float z2 = cubePos.y * sinB + z1 * cosB;
+
+    // Project to 2D
+    float perspective = 1.0 / (1.0 + z2 * 0.5);
+    vec2 proj = vec2(x1, y1) * perspective;
+
+    // Draw cube face
+    float size = 0.04 * perspective;
+    float cube = max(abs(uv.x - proj.x) - size, abs(uv.y - proj.y) - size);
+    float face = smoothstep(0.005, 0.0, cube);
+
+    // NeXT-style grayscale with slight color
+    vec3 cubeCol = vec3(0.3 + i * 0.08) + vec3(0.1, 0.05, 0.0) * perspective;
+    col += cubeCol * face * perspective;
+
+    // Edges
+    float edge = smoothstep(0.008, 0.003, abs(cube + size * 0.1));
+    col += vec3(0.8) * edge * perspective * 0.5;
+  }
+
+  // NeXT logo hint in center
+  float logo = smoothstep(0.12, 0.11, length(uv));
+  logo *= smoothstep(0.08, 0.09, length(uv));
+  col += vec3(0.2) * logo;
+
+  // Subtle scanlines
+  col *= 0.95 + 0.05 * sin(gl_FragCoord.y * 2.0);
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'BackSpace', desc: 'NeXTSTEP geometric patterns' });
+
+register('nextstep', `
+// NeXTSTEP cube - rotating NeXT logo cube
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.15);  // NeXT gray
+  float t = u_time * 0.5;
+
+  // Rotation matrices
+  float cosX = cos(t), sinX = sin(t);
+  float cosY = cos(t * 0.7), sinY = sin(t * 0.7);
+
+  // Cube vertices
+  vec3 verts[8];
+  float s = 0.2;
+  verts[0] = vec3(-s, -s, -s);
+  verts[1] = vec3(s, -s, -s);
+  verts[2] = vec3(s, s, -s);
+  verts[3] = vec3(-s, s, -s);
+  verts[4] = vec3(-s, -s, s);
+  verts[5] = vec3(s, -s, s);
+  verts[6] = vec3(s, s, s);
+  verts[7] = vec3(-s, s, s);
+
+  // Rotate and project vertices
+  vec2 proj[8];
+  for (int i = 0; i < 8; i++) {
+    vec3 v = verts[i];
+    // Rotate Y
+    float x1 = v.x * cosY - v.z * sinY;
+    float z1 = v.x * sinY + v.z * cosY;
+    // Rotate X
+    float y1 = v.y * cosX - z1 * sinX;
+    float z2 = v.y * sinX + z1 * cosX;
+
+    float persp = 1.0 / (1.0 + z2 * 0.3);
+    proj[i] = vec2(x1, y1) * persp;
+  }
+
+  // Draw edges
+  int edges[24];
+  edges[0] = 0; edges[1] = 1;
+  edges[2] = 1; edges[3] = 2;
+  edges[4] = 2; edges[5] = 3;
+  edges[6] = 3; edges[7] = 0;
+  edges[8] = 4; edges[9] = 5;
+  edges[10] = 5; edges[11] = 6;
+  edges[12] = 6; edges[13] = 7;
+  edges[14] = 7; edges[15] = 4;
+  edges[16] = 0; edges[17] = 4;
+  edges[18] = 1; edges[19] = 5;
+  edges[20] = 2; edges[21] = 6;
+  edges[22] = 3; edges[23] = 7;
+
+  for (int i = 0; i < 12; i++) {
+    vec2 p1 = proj[edges[i * 2]];
+    vec2 p2 = proj[edges[i * 2 + 1]];
+    float d = line(uv, p1, p2);
+    float edge = smoothstep(0.004, 0.001, d);
+    col += vec3(0.8) * edge;
+  }
+
+  // "NeXT" text approximation on front face
+  float textGlow = smoothstep(0.15, 0.0, length(uv));
+  col += vec3(0.3) * textGlow * 0.3;
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'NeXTSTEP', desc: 'Rotating NeXT cube' });
+
+// ============================================================================
+// MORE XSCREENSAVER
+// ============================================================================
+
+register('fireworkx', `
+// XScreenSaver Fireworkx - fireworks display
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  uv.x *= u_resolution.x / u_resolution.y;
+  vec3 col = vec3(0.0, 0.0, 0.02);
+  float t = u_time;
+
+  // Multiple fireworks
+  for (float fw = 0.0; fw < 5.0; fw++) {
+    float fwTime = mod(t + fw * 1.3, 4.0);
+    float launchX = hash(vec2(fw, floor(t / 4.0 + fw * 0.3))) * 0.8 + 0.1;
+
+    if (fwTime < 1.5) {
+      // Launch trail
+      float launchY = fwTime * 0.5;
+      vec2 launchPos = vec2(launchX, launchY);
+      float trail = smoothstep(0.02, 0.0, length(uv - launchPos));
+      col += vec3(1.0, 0.8, 0.4) * trail;
+
+      // Sparks during launch
+      for (float s = 0.0; s < 5.0; s++) {
+        vec2 sparkPos = launchPos - vec2(0.0, s * 0.02);
+        sparkPos += vec2(hash(vec2(s, fw)) - 0.5, 0.0) * 0.02;
+        float spark = smoothstep(0.008, 0.0, length(uv - sparkPos));
+        col += vec3(1.0, 0.6, 0.2) * spark * (1.0 - s / 5.0);
+      }
+    } else if (fwTime < 3.5) {
+      // Explosion
+      float explodeTime = fwTime - 1.5;
+      vec2 explodePos = vec2(launchX, 0.75);
+      float explodeRadius = explodeTime * 0.3;
+      float fade = 1.0 - explodeTime / 2.0;
+
+      // Explosion particles
+      for (float p = 0.0; p < 50.0; p++) {
+        float angle = hash(vec2(p, fw)) * 6.28318;
+        float speed = 0.5 + hash(vec2(p + 50.0, fw)) * 0.5;
+        float gravity = explodeTime * explodeTime * 0.1;
+
+        vec2 particlePos = explodePos + vec2(cos(angle), sin(angle)) * explodeRadius * speed;
+        particlePos.y -= gravity;
+
+        float d = length(uv - particlePos);
+        float particle = smoothstep(0.008, 0.0, d) * fade;
+
+        vec3 particleCol = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + fw * 2.0 + p * 0.1);
+        col += particleCol * particle;
+      }
+    }
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Fireworkx', desc: 'Fireworks display' });
+
+register('phosphor', `
+// XScreenSaver Phosphor - old terminal emulator
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec3 col = vec3(0.0);
+  float t = u_time;
+
+  // Green phosphor color
+  vec3 phosphorCol = vec3(0.2, 1.0, 0.3);
+
+  // Character grid
+  float charW = 0.0125;
+  float charH = 0.025;
+  vec2 charPos = floor(uv / vec2(charW, charH));
+  vec2 charUv = fract(uv / vec2(charW, charH));
+
+  float row = charPos.y;
+  float col_i = charPos.x;
+
+  // Scrolling effect
+  float scroll = floor(t * 3.0);
+  row += scroll;
+
+  // Generate text pattern
+  float charHash = hash(vec2(row, col_i));
+
+  // Typing effect
+  float typingCol = mod(t * 20.0, 80.0);
+  float typingRow = floor(t * 3.0);
+
+  float visible = 1.0;
+  if (charPos.y > 25.0 - mod(scroll, 25.0)) {
+    if (charPos.x > typingCol) visible = 0.0;
+  }
+
+  // Random characters
+  if (charHash > 0.3 && visible > 0.0) {
+    // Simple block character
+    float charShape = step(0.15, charUv.x) * step(charUv.x, 0.85);
+    charShape *= step(0.1, charUv.y) * step(charUv.y, 0.9);
+
+    // Different character shapes
+    if (charHash > 0.7) {
+      charShape *= step(0.5, charUv.y) + step(charUv.y, 0.5) * step(0.4, charUv.x) * step(charUv.x, 0.6);
+    } else if (charHash > 0.5) {
+      charShape = step(0.3, charUv.x) * step(charUv.x, 0.7);
+      charShape *= step(0.2, charUv.y) * step(charUv.y, 0.8);
+    }
+
+    col += phosphorCol * charShape;
+  }
+
+  // Cursor blink
+  float cursorX = mod(typingCol, 80.0) * charW;
+  float cursorY = (25.0 - 1.0) * charH;
+  if (abs(uv.x - cursorX - charW * 0.5) < charW * 0.4 &&
+      abs(uv.y - cursorY - charH * 0.5) < charH * 0.4) {
+    if (mod(t, 1.0) < 0.5) {
+      col += phosphorCol;
+    }
+  }
+
+  // Phosphor glow
+  col += col * 0.5;
+
+  // Scanlines
+  col *= 0.9 + 0.1 * sin(uv.y * u_resolution.y * 3.14159);
+
+  // Vignette
+  col *= 0.8 + 0.2 * smoothstep(0.8, 0.3, length(uv - 0.5));
+
+  // Slight flicker
+  col *= 0.97 + 0.03 * sin(t * 60.0);
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Phosphor', desc: 'Old terminal emulator' });
+
+register('atlantis', `
+// XScreenSaver Atlantis - underwater with swimming creatures
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time;
+
+  // Deep ocean gradient
+  vec3 col = mix(vec3(0.0, 0.05, 0.15), vec3(0.0, 0.02, 0.08), uv.y);
+
+  // Light rays from above
+  for (float i = 0.0; i < 5.0; i++) {
+    float rayX = 0.1 + i * 0.2 + sin(t * 0.3 + i) * 0.05;
+    float ray = smoothstep(0.08, 0.0, abs(uv.x - rayX));
+    ray *= smoothstep(0.0, 0.8, uv.y);
+    col += vec3(0.05, 0.1, 0.15) * ray;
+  }
+
+  // Swimming whales/dolphins
+  for (float i = 0.0; i < 3.0; i++) {
+    float creatureX = fract(t * 0.05 * (1.0 + i * 0.2) + i * 0.3);
+    float creatureY = 0.3 + i * 0.2 + sin(t * 0.5 + i * 2.0) * 0.05;
+
+    vec2 creaturePos = vec2(creatureX, creatureY);
+    vec2 toCreature = uv - creaturePos;
+
+    // Body (elongated ellipse)
+    float body = length(toCreature * vec2(0.5, 2.5));
+    float creature = smoothstep(0.08, 0.07, body);
+
+    // Tail
+    vec2 tailPos = toCreature + vec2(0.08, 0.0);
+    float tail = length(tailPos * vec2(0.8, 1.5));
+    tail = smoothstep(0.04, 0.03, tail) * step(0.0, tailPos.x);
+
+    // Fin
+    vec2 finPos = toCreature + vec2(0.0, -0.03);
+    float fin = smoothstep(0.025, 0.02, length(finPos * vec2(1.5, 0.8)));
+    fin *= step(finPos.y, 0.0);
+
+    // Color
+    vec3 creatureCol = mix(vec3(0.2, 0.3, 0.4), vec3(0.1, 0.15, 0.2), i / 3.0);
+
+    col = mix(col, creatureCol, creature);
+    col = mix(col, creatureCol * 0.8, tail);
+    col = mix(col, creatureCol * 0.9, fin);
+
+    // Eye
+    vec2 eyePos = toCreature + vec2(-0.05, 0.01);
+    float eye = smoothstep(0.008, 0.005, length(eyePos));
+    col = mix(col, vec3(0.1), eye * creature);
+  }
+
+  // Small fish school
+  for (float i = 0.0; i < 20.0; i++) {
+    float schoolPhase = t * 0.1 + hash(vec2(i, 0.0));
+    vec2 fishPos = vec2(
+      fract(schoolPhase + hash(vec2(i, 1.0)) * 0.2),
+      0.5 + hash(vec2(i, 2.0)) * 0.3 + sin(t * 2.0 + i) * 0.02
+    );
+
+    float fish = smoothstep(0.012, 0.008, length((uv - fishPos) * vec2(1.0, 2.0)));
+    col += vec3(0.3, 0.4, 0.5) * fish * 0.5;
+  }
+
+  // Bubbles
+  for (float i = 0.0; i < 10.0; i++) {
+    float bubbleX = hash(vec2(i, 10.0));
+    float bubbleY = fract(t * 0.1 + hash(vec2(i, 11.0)));
+    vec2 bubblePos = vec2(bubbleX + sin(bubbleY * 5.0) * 0.02, bubbleY);
+    float bubble = smoothstep(0.008, 0.004, length(uv - bubblePos));
+    col += vec3(0.2, 0.3, 0.4) * bubble * 0.3;
+  }
+
+  // Ocean floor
+  if (uv.y < 0.1) {
+    float floor_v = smoothstep(0.1, 0.0, uv.y);
+    col = mix(col, vec3(0.15, 0.12, 0.1), floor_v);
+
+    // Seaweed
+    for (float i = 0.0; i < 10.0; i++) {
+      float weedX = hash(vec2(i, 20.0));
+      float weedH = 0.05 + hash(vec2(i, 21.0)) * 0.04;
+      float sway = sin(t * 2.0 + i) * 0.01;
+
+      if (uv.x > weedX - 0.01 + sway && uv.x < weedX + 0.01 + sway && uv.y < weedH) {
+        col = mix(col, vec3(0.1, 0.3, 0.15), 0.8);
+      }
+    }
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Atlantis', desc: 'Underwater with sea creatures' });
+
+register('galaxy', `
+// XScreenSaver Galaxy - spiral galaxy simulation
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.0, 0.0, 0.02);
+  float t = u_time * 0.1;
+
+  // Galaxy rotation
+  float cosR = cos(t * 0.5), sinR = sin(t * 0.5);
+  vec2 rotUv = vec2(uv.x * cosR - uv.y * sinR, uv.x * sinR + uv.y * cosR);
+
+  // Convert to polar
+  float r = length(rotUv);
+  float angle = atan(rotUv.y, rotUv.x);
+
+  // Spiral arms
+  for (float arm = 0.0; arm < 2.0; arm++) {
+    float armAngle = angle + arm * 3.14159;
+    float spiral = armAngle + r * 8.0 - t * 2.0;
+    float armBright = smoothstep(1.0, 0.0, abs(sin(spiral)));
+    armBright *= smoothstep(0.5, 0.1, r);
+    armBright *= smoothstep(0.02, 0.08, r);
+
+    col += vec3(0.4, 0.5, 0.8) * armBright * 0.3;
+  }
+
+  // Core
+  float core = exp(-r * 15.0);
+  col += vec3(1.0, 0.9, 0.7) * core;
+  col += vec3(0.8, 0.6, 0.4) * exp(-r * 8.0) * 0.5;
+
+  // Stars
+  for (float i = 0.0; i < 150.0; i++) {
+    float starAngle = hash(vec2(i, 0.0)) * 6.28318;
+    float starR = hash(vec2(i, 1.0)) * 0.45;
+
+    // Stars follow spiral pattern roughly
+    float spiralOffset = starR * 8.0;
+    starAngle += spiralOffset + t * 0.5;
+
+    vec2 starPos = vec2(cos(starAngle), sin(starAngle)) * starR;
+
+    // Rotate with galaxy
+    starPos = vec2(starPos.x * cosR - starPos.y * sinR, starPos.x * sinR + starPos.y * cosR);
+
+    float d = length(uv - starPos);
+    float star = smoothstep(0.003, 0.0, d);
+    float twinkle = sin(t * 10.0 + i * 3.0) * 0.3 + 0.7;
+
+    vec3 starCol = mix(vec3(0.8, 0.9, 1.0), vec3(1.0, 0.8, 0.6), hash(vec2(i, 2.0)));
+    col += starCol * star * twinkle;
+  }
+
+  // Background stars (not rotating)
+  for (float i = 0.0; i < 50.0; i++) {
+    vec2 bgStar = vec2(hash(vec2(i, 10.0)), hash(vec2(i, 11.0))) - 0.5;
+    bgStar *= 1.5;
+    float d = length(uv - bgStar);
+    float star = smoothstep(0.002, 0.0, d) * 0.3;
+    col += vec3(1.0) * star;
+  }
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Galaxy', desc: 'Spiral galaxy simulation' });
+
+register('interference', `
+// XScreenSaver Interference - moiré pattern interference
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3 col = vec3(0.0);
+  float t = u_time * 0.5;
+
+  // Multiple wave sources
+  for (float i = 0.0; i < 3.0; i++) {
+    // Moving source positions
+    vec2 source = vec2(
+      sin(t * (0.5 + i * 0.2) + i * 2.0) * 0.3,
+      cos(t * (0.4 + i * 0.15) + i * 1.5) * 0.3
+    );
+
+    float d = length(uv - source);
+    float wave = sin(d * 40.0 - t * 5.0);
+
+    // Each source has different color
+    vec3 waveCol;
+    if (i == 0.0) waveCol = vec3(1.0, 0.2, 0.2);
+    else if (i == 1.0) waveCol = vec3(0.2, 1.0, 0.2);
+    else waveCol = vec3(0.2, 0.2, 1.0);
+
+    col += waveCol * (wave * 0.5 + 0.5) * 0.5;
+  }
+
+  // Interference creates moiré patterns naturally from wave addition
+  // Add some contrast
+  col = smoothstep(0.2, 0.8, col);
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Interference', desc: 'Moiré wave interference' });
+
+// ============================================================================
+// MICROSOFT PLUS! / WINDOWS EXTRAS
+// ============================================================================
+
+register('dangerousCreatures', `
+// Microsoft Plus! Dangerous Creatures - nature slideshow style
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float t = u_time;
+
+  // Cycle through different "creatures" (abstract representations)
+  float scene = mod(floor(t * 0.2), 4.0);
+
+  vec3 col = vec3(0.0);
+
+  if (scene == 0.0) {
+    // Spider web pattern
+    vec2 center = vec2(0.5, 0.5);
+    float angle = atan(uv.y - center.y, uv.x - center.x);
+    float r = length(uv - center);
+
+    // Radial threads
+    float radial = smoothstep(0.02, 0.01, abs(sin(angle * 12.0)));
+    radial *= smoothstep(0.5, 0.1, r);
+
+    // Spiral threads
+    float spiral = smoothstep(0.01, 0.005, abs(sin(r * 30.0 + angle * 2.0)));
+    spiral *= smoothstep(0.5, 0.05, r);
+
+    col = vec3(0.8, 0.8, 0.85) * (radial + spiral);
+
+    // Spider
+    float spider = smoothstep(0.03, 0.02, length(uv - center));
+    col = mix(col, vec3(0.1), spider);
+
+    // Background
+    col = mix(vec3(0.1, 0.15, 0.1), col, max(radial, spiral) + spider);
+
+  } else if (scene == 1.0) {
+    // Snake pattern
+    float snakeY = 0.5 + sin(uv.x * 10.0 + t * 2.0) * 0.1;
+    float snake = smoothstep(0.04, 0.03, abs(uv.y - snakeY));
+
+    // Scales
+    vec2 scaleUv = vec2(uv.x * 20.0, (uv.y - snakeY) * 10.0);
+    float scales = sin(scaleUv.x) * sin(scaleUv.y);
+
+    vec3 snakeCol = mix(vec3(0.3, 0.5, 0.2), vec3(0.5, 0.3, 0.1), scales * 0.5 + 0.5);
+    col = mix(vec3(0.1, 0.2, 0.1), snakeCol, snake);
+
+    // Eye
+    vec2 headPos = vec2(0.8 + sin(t * 2.0) * 0.02, snakeY);
+    float eye = smoothstep(0.015, 0.01, length(uv - headPos));
+    col = mix(col, vec3(0.8, 0.2, 0.1), eye);
+
+  } else if (scene == 2.0) {
+    // Scorpion silhouette
+    col = vec3(0.9, 0.7, 0.4);  // Desert background
+
+    vec2 bodyPos = vec2(0.5, 0.4);
+    float body = smoothstep(0.08, 0.07, length((uv - bodyPos) * vec2(1.0, 2.0)));
+
+    // Tail (curved)
+    for (float i = 0.0; i < 6.0; i++) {
+      float tailAngle = 0.5 + i * 0.15;
+      vec2 tailSeg = bodyPos + vec2(sin(tailAngle) * 0.05 * i, 0.05 + i * 0.03);
+      float seg = smoothstep(0.025, 0.02, length(uv - tailSeg));
+      body = max(body, seg);
+    }
+
+    // Stinger
+    vec2 stingerPos = bodyPos + vec2(0.1, 0.28);
+    float stinger = smoothstep(0.015, 0.01, length(uv - stingerPos));
+    body = max(body, stinger);
+
+    // Claws
+    for (float c = -1.0; c <= 1.0; c += 2.0) {
+      vec2 clawPos = bodyPos + vec2(c * 0.1, -0.05);
+      float claw = smoothstep(0.03, 0.025, length(uv - clawPos));
+      body = max(body, claw);
+    }
+
+    col = mix(col, vec3(0.1), body);
+
+  } else {
+    // Shark fin
+    col = mix(vec3(0.1, 0.2, 0.4), vec3(0.2, 0.4, 0.6), uv.y);  // Ocean
+
+    // Waves
+    float wave = sin(uv.x * 20.0 + t * 3.0) * 0.01;
+    if (uv.y < 0.5 + wave) {
+      col = mix(vec3(0.0, 0.1, 0.3), col, uv.y * 2.0);
+    }
+
+    // Fin
+    float finX = fract(t * 0.1) * 1.2 - 0.1;
+    vec2 finPos = vec2(finX, 0.5);
+    vec2 toFin = uv - finPos;
+
+    float fin = step(toFin.y, 0.1 - abs(toFin.x) * 2.0);
+    fin *= step(0.0, toFin.y);
+    fin *= step(abs(toFin.x), 0.05);
+
+    col = mix(col, vec3(0.3, 0.35, 0.4), fin);
+  }
+
+  // Slide transition
+  float transition = smoothstep(0.0, 0.1, fract(t * 0.2));
+  transition *= smoothstep(1.0, 0.9, fract(t * 0.2));
+  col *= transition;
+
+  fragColor = vec4(col, 1.0);
+}`, { name: 'Dangerous Creatures', desc: 'Plus! nature scenes' });
+
 export default ass;

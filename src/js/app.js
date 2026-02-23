@@ -25,12 +25,20 @@ const ERAS = {
     brand: 'SVGA',
     effects: ['pipes', 'maze', 'flowerbox', 'flyingobjects', 'text3d', 'beziers', 'mystify', 'starfield']
   },
+  winxp: {
+    name: 'Windows XP',
+    year: '2001-2006',
+    desc: 'Last classic OpenGL screensaver era',
+    computer: 'pc-beige',
+    brand: 'LCD',
+    effects: ['windowsxp', 'pipes', 'maze', 'flowerbox', 'text3d', 'starfield', 'mystify']
+  },
   winvista: {
     name: 'Windows Vista/7',
     year: '2007-2009',
     desc: 'DWM-powered Aero era',
     computer: 'pc-vista',
-    effects: ['bubbles', 'ribbons', 'aurora', 'mystify']
+    effects: ['bubbles', 'ribbons', 'aurora', 'mystify', 'windowsenergy']
   },
   macclassic: {
     name: 'Classic Mac',
@@ -51,7 +59,14 @@ const ERAS = {
     year: '1992-present',
     desc: 'Jamie Zawinski\'s 240+ module collection',
     computer: 'linux-workstation',
-    effects: ['matrix', 'gears', 'plasma', 'penrose', 'glplanet', 'sonar', 'hyperspace', 'flipflop', 'boingball', 'timetunnel', 'unknownpleasures', 'molecule', 'sproingies', 'twang', 'lament', 'endgame']
+    effects: ['matrix', 'gears', 'plasma', 'penrose', 'glplanet', 'sonar', 'hyperspace', 'flipflop', 'boingball', 'timetunnel', 'unknownpleasures', 'molecule', 'sproingies', 'twang', 'lament', 'endgame', 'fireworkx', 'phosphor', 'atlantis', 'galaxy', 'interference']
+  },
+  nextstep: {
+    name: 'NeXTSTEP',
+    year: '1988-1997',
+    desc: 'Steve Jobs NeXT workstation',
+    computer: 'mac-classic',
+    effects: ['backspace', 'nextstep', 'boingball']
   },
   afterdark: {
     name: 'After Dark',
@@ -95,7 +110,7 @@ const ERAS = {
     desc: 'Windows add-on pack screensavers',
     computer: 'pc-beige',
     brand: 'SVGA',
-    effects: ['underwater', 'insidecomputer']
+    effects: ['underwater', 'insidecomputer', 'dangerousCreatures']
   },
   originals: {
     name: 'aSS Originals',
