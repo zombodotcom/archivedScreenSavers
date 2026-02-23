@@ -365,111 +365,192 @@ void main() {
 });
 
 register('maze', `
+// Windows 95 3D Maze - first-person navigation
+// Based on original Microsoft OpenGL screensaver
+
+// Maze cell structure using hash - creates connected corridors
+float mazeWall(vec2 cell, int dir) {
+  // dir: 0=right, 1=up, 2=left, 3=down
+  // Use hash to deterministically generate maze structure
+  float h = hash(cell * 0.37 + float(dir) * 17.31);
+
+  // Ensure connectivity - at least 2 openings per cell
+  float h2 = hash(cell * 0.73);
+  if (dir == int(h2 * 4.0)) return 0.0; // Always one opening
+  if (dir == int(fract(h2 * 7.0) * 4.0)) return 0.0; // Second opening
+
+  return step(0.55, h); // Additional random walls
+}
+
 void main() {
   vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
 
-  // Windows 95 Maze: First-person navigation through corridors
-  float t = u_time * 0.8;
+  float t = u_time * u_speed;
 
-  // Navigate through maze - periodic turns at intersections
-  float segment = floor(t / 3.0);
-  float segT = fract(t / 3.0) * 3.0;
+  // Navigate through maze - simulated right-hand rule
+  // Pre-computed path segments
+  float segLen = 2.0; // Cell size
+  float totalT = t;
+  float seg = floor(totalT / 1.5);
+  float segT = fract(totalT / 1.5);
 
-  // Position along corridor
-  float turn = hash(vec2(segment, 0.0));
-  vec3 ro = vec3(0.0, 0.4, segT * 2.0);  // Eye height 0.4
+  // Build path by following right-hand rule
+  vec2 pos = vec2(0.0);
+  float dir = 0.0; // 0=+x, 1=+z, 2=-x, 3=-z
+  vec2 dirs[4];
+  dirs[0] = vec2(1.0, 0.0);
+  dirs[1] = vec2(0.0, 1.0);
+  dirs[2] = vec2(-1.0, 0.0);
+  dirs[3] = vec2(0.0, -1.0);
 
-  // Slight head bob like original
-  ro.y += sin(t * 4.0) * 0.02;
+  // Simulate path for 'seg' steps
+  for (int i = 0; i < 50; i++) {
+    if (float(i) >= seg) break;
 
-  vec3 rd = normalize(vec3(uv.x * 0.8, uv.y * 0.8 - 0.1, 1.0));
+    // Right-hand rule: try right, then forward, then left, then back
+    float h = hash(pos + float(i) * 0.1);
+    int tryDir = int(mod(dir + 1.0, 4.0)); // Right first
+
+    for (int j = 0; j < 4; j++) {
+      int checkDir = int(mod(float(tryDir) - float(j) + 4.0, 4.0));
+      if (mazeWall(pos, checkDir) < 0.5) {
+        dir = float(checkDir);
+        pos += dirs[checkDir];
+        break;
+      }
+    }
+  }
+
+  // Interpolate within current segment
+  vec2 nextPos = pos + dirs[int(dir)] * segT;
+
+  // Camera position
+  vec3 ro = vec3(nextPos.x * segLen + segLen * 0.5, 0.45, nextPos.y * segLen + segLen * 0.5);
+
+  // Head bob like original
+  ro.y += sin(t * 5.0) * 0.015 * u_headBob;
+
+  // Look direction based on movement
+  float lookAng = dir * 1.5708; // 90 degrees per direction
+  // Smooth turn at segment transitions
+  float turnSmooth = smoothstep(0.8, 1.0, segT) * 0.3;
+  vec3 lookDir = vec3(sin(lookAng), 0.0, cos(lookAng));
+
+  vec3 fwd = normalize(lookDir);
+  vec3 right = normalize(cross(vec3(0,1,0), fwd));
+  vec3 up = cross(fwd, right);
+  vec3 rd = normalize(uv.x * right * 0.9 + (uv.y - 0.05) * up * 0.9 + fwd);
 
   vec3 col = vec3(0.0);
   float dist = 0.0;
 
-  for (int i = 0; i < 80; i++) {
+  for (int i = 0; i < 60; i++) {
     vec3 p = ro + rd * dist;
 
-    // Floor at y=0
+    // Floor and ceiling
     float floorD = p.y;
-
-    // Ceiling at y=1
     float ceilD = 1.0 - p.y;
 
-    // Walls: maze corridors based on grid
-    vec2 cell = floor(p.xz / 2.0);
-    vec2 local = mod(p.xz, 2.0) - 1.0;
+    // Maze walls
+    vec2 cellPos = floor(p.xz / segLen);
+    vec2 local = mod(p.xz, segLen) - segLen * 0.5;
 
-    // Maze walls with passages
-    float h1 = hash(cell);
-    float h2 = hash(cell + vec2(1.0, 0.0));
-    float h3 = hash(cell + vec2(0.0, 1.0));
-
+    // Wall thickness
+    float wallW = 0.15;
     float wallD = 100.0;
 
-    // Left/right walls
-    if (h1 < 0.6) {
-      wallD = min(wallD, abs(local.x) - 0.9);
+    // Check each wall of the cell
+    // Right wall (+X)
+    if (mazeWall(cellPos, 0) > 0.5) {
+      wallD = min(wallD, segLen * 0.5 - wallW - local.x);
     }
-    // Front/back walls with openings
-    if (h2 < 0.5) {
-      float frontWall = abs(local.y + 1.0) - 0.1;
-      if (abs(local.x) > 0.35) wallD = min(wallD, frontWall);
+    // Front wall (+Z)
+    if (mazeWall(cellPos, 1) > 0.5) {
+      wallD = min(wallD, segLen * 0.5 - wallW - local.y);
+    }
+    // Left wall (-X)
+    if (mazeWall(cellPos, 2) > 0.5) {
+      wallD = min(wallD, local.x + segLen * 0.5 - wallW);
+    }
+    // Back wall (-Z)
+    if (mazeWall(cellPos, 3) > 0.5) {
+      wallD = min(wallD, local.y + segLen * 0.5 - wallW);
     }
 
-    wallD = max(wallD, -floorD);
-    wallD = max(wallD, -ceilD);
+    float d = min(min(floorD, ceilD), max(0.001, wallD));
 
-    float d = min(min(floorD, ceilD), abs(wallD));
-
-    if (d < 0.005) {
+    if (d < 0.004) {
       vec3 hitP = p;
 
       if (floorD < 0.01) {
-        // Floor: red carpet with texture like Win95
-        vec2 floorUV = fract(hitP.xz * 2.0);
-        float pattern = step(0.05, min(floorUV.x, floorUV.y));
-        col = vec3(0.5, 0.1, 0.1) * (0.8 + pattern * 0.2);
+        // Floor: red/maroon carpet like original
+        vec2 floorUV = fract(hitP.xz * 1.5);
+        float carpet = 0.8 + fbm(hitP.xz * 8.0) * 0.2;
+        col = vec3(0.45, 0.08, 0.08) * carpet;
       } else if (ceilD < 0.01) {
-        // Ceiling: white tiles
-        vec2 ceilUV = fract(hitP.xz * 2.0);
-        float tiles = step(0.02, min(ceilUV.x, ceilUV.y)) * step(0.02, min(1.0-ceilUV.x, 1.0-ceilUV.y));
-        col = vec3(0.9, 0.9, 0.85) * (0.7 + tiles * 0.3);
+        // Ceiling: white acoustic tiles
+        vec2 ceilUV = fract(hitP.xz * 1.0);
+        float edge = step(0.03, ceilUV.x) * step(0.03, 1.0-ceilUV.x) *
+                     step(0.03, ceilUV.y) * step(0.03, 1.0-ceilUV.y);
+        col = vec3(0.85, 0.85, 0.8) * (0.7 + edge * 0.3);
       } else {
-        // Walls: stone/brick texture
+        // Walls: brick texture like original
         vec2 wallUV;
+        vec3 n = vec3(0.0);
         if (abs(local.x) > abs(local.y)) {
           wallUV = vec2(hitP.z, hitP.y);
+          n = vec3(sign(local.x), 0.0, 0.0);
         } else {
           wallUV = vec2(hitP.x, hitP.y);
+          n = vec3(0.0, 0.0, sign(local.y));
         }
 
-        // Brick pattern
-        vec2 brickUV = wallUV * vec2(2.0, 4.0);
+        // Authentic brick pattern
+        vec2 brickSize = vec2(0.4, 0.2);
+        vec2 brickUV = wallUV / brickSize;
         float row = floor(brickUV.y);
-        brickUV.x += mod(row, 2.0) * 0.5;
+        brickUV.x += mod(row, 2.0) * 0.5; // Offset alternate rows
         vec2 brickF = fract(brickUV);
-        float brick = step(0.05, brickF.x) * step(0.1, brickF.y);
 
-        col = vec3(0.55, 0.45, 0.35) * (0.7 + brick * 0.3);
-        col += hash(floor(brickUV)) * 0.08 - 0.04; // Variation
+        // Mortar lines
+        float mortarX = smoothstep(0.0, 0.08, brickF.x) * smoothstep(1.0, 0.92, brickF.x);
+        float mortarY = smoothstep(0.0, 0.12, brickF.y) * smoothstep(1.0, 0.88, brickF.y);
+        float mortar = mortarX * mortarY;
+
+        // Brick color with variation
+        vec3 brickCol = vec3(0.6, 0.35, 0.25);
+        brickCol += (hash(floor(brickUV)) - 0.5) * 0.15;
+        vec3 mortarCol = vec3(0.5, 0.48, 0.45);
+
+        col = mix(mortarCol, brickCol, mortar);
+
+        // Simple lighting
+        float light = 0.6 + 0.4 * max(dot(n, normalize(vec3(0.3, 0.5, 0.4))), 0.0);
+        col *= light;
       }
 
-      // Distance fog (green tint like original)
-      float fog = exp(-dist * 0.15);
-      col = mix(vec3(0.1, 0.15, 0.1), col, fog);
+      // Distance fog (classic green tint)
+      float fog = exp(-dist * 0.12);
+      col = mix(vec3(0.08, 0.12, 0.08), col, fog);
       break;
     }
 
-    dist += d * 0.8;
-    if (dist > 25.0) {
-      col = vec3(0.1, 0.15, 0.1);  // Fog color
+    dist += d * 0.9;
+    if (dist > 20.0) {
+      col = vec3(0.08, 0.12, 0.08);
       break;
     }
   }
 
   fragColor = vec4(col, 1.0);
-}`, { name: '3D Maze', desc: 'First-person maze walkthrough' });
+}`, {
+  name: '3D Maze',
+  desc: 'First-person maze navigation like Windows 95',
+  settings: {
+    speed: { value: 0.6, min: 0.2, max: 1.5, step: 0.1, label: 'Walk Speed' },
+    headBob: { value: 1.0, min: 0.0, max: 2.0, step: 0.1, label: 'Head Bob' }
+  }
+});
 
 register('flowerbox', `
 // Windows 95 Flower Box: morphing textured polyhedra
