@@ -4,7 +4,7 @@
  */
 
 import { ass } from './ass.js';
-import './effects.js';
+import './effects/index.js';
 
 // Era configurations based on ARCHIVE-new.md
 // Note: Only include effects that accurately represent each era

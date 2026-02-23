@@ -333,7 +333,14 @@ Want to add a screensaver? Here's how:
 
 ### 1. Create the Effect
 
-Add your effect to `src/js/effects.js`:
+Add your effect to the appropriate file in `src/js/effects/`:
+- `windows.js` - Windows screensavers
+- `afterdark.js` - After Dark collection
+- `xscreensaver.js` - XScreenSaver/Linux
+- `macos.js` - Mac OS X
+- `kde.js` - KDE desktop
+- `misc.js` - Other platforms (Amiga, OS/2, etc.)
+- `originals.js` - New/enhanced effects
 
 ```javascript
 register('myeffect', `
@@ -418,12 +425,20 @@ npm run dev   # Start dev server
 ```
 src/
 ├── js/
-│   ├── ass.js      # Core engine (WebGL2, effects registry)
-│   ├── effects.js  # All screensaver shaders (~120 effects)
-│   └── app.js      # UI, eras config, settings panel
+│   ├── ass.js              # Core WebGL2 shader engine
+│   ├── app.js              # UI, eras config, navigation
+│   └── effects/            # Screensaver effects by category
+│       ├── index.js        # Imports all effect modules
+│       ├── windows.js      # Windows 3.1/95/98/XP/Vista (20 effects)
+│       ├── afterdark.js    # After Dark collection (29 effects)
+│       ├── xscreensaver.js # XScreenSaver/Linux (21 effects)
+│       ├── macos.js        # Mac OS X effects (17 effects)
+│       ├── kde.js          # KDE desktop effects (7 effects)
+│       ├── misc.js         # Amiga, OS/2, NeXTSTEP, SGI (11 effects)
+│       └── originals.js    # aSS original creations (24 effects)
 ├── css/
-│   └── styles.css  # Museum UI styling
-└── index.html      # Entry point
+│   └── main.css            # Museum UI styling
+└── index.html              # Entry point
 ```
 
 ---
